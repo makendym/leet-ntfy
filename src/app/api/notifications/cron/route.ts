@@ -33,12 +33,14 @@ export async function GET(request: Request) {
         for (const user of (users as UserProfile[])) {
             if (!user.topics || user.topics.length === 0) continue;
 
-            // 3-hour gap safety check
+            // 3-hour gap safety check (Temporarily disabled for testing)
+            /*
             if (user.last_notified_at) {
                 const lastNotified = new Date(user.last_notified_at).getTime();
                 const diffHours = (now.getTime() - lastNotified) / (1000 * 60 * 60);
                 if (diffHours < 3) continue;
             }
+            */
 
             let question;
             let shouldUpdateUser = false;
