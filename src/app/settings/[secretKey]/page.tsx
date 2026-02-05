@@ -66,27 +66,21 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
         if (!user) return;
         setIsSaving(true);
         try {
-            // If they don't have a question, it acts like a "Send me my first challenge"
-            const res = await fetch(`/api/notifications/cron`, {
-                headers: { 'Authorization': `Bearer super_secret_cron_key_123` }
+            const res = await fetch(`/api/user/nudge`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ secretKey })
             });
             const data = await res.json();
 
-            if (data.status === 'success' && data.processed > 0) {
-                alert('Success! Your first study challenge has been sent to your phone.');
+            if (res.ok) {
+                alert('Success! A study challenge has been sent to your phone.');
                 // Refresh user data to show the new question status
                 const userRes = await fetch(`/api/user/settings?secretKey=${secretKey}`);
                 const userData = await userRes.json();
                 setUser(userData);
             } else {
-                // If the cron skipped them (e.g. they already have an active question), send a simple test instead
-                await NotificationService.sendNotification({
-                    title: 'LeetNtfy Connection Test',
-                    message: 'Your notifications are working! We will nudge you once our study script runs.',
-                    topic: user.secret_key,
-                    actions: [{ label: 'View Dashboard', url: window.location.href }]
-                });
-                alert('Test notification sent! You already have an active question, so we just sent a test ping.');
+                alert(`Note: ${data.error || 'Check your ntfy app subscriptions.'}`);
             }
         } catch (err) {
             console.error(err);
@@ -122,8 +116,8 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                             onClick={testNotification}
                             disabled={isSaving}
                             className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm transition-all flex items-center justify-center gap-2 ${!user?.current_question_slug
-                                    ? 'bg-[#ffa116] text-black font-bold hover:bg-[#ffb342] shadow-lg shadow-orange-500/20'
-                                    : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                                ? 'bg-[#ffa116] text-black font-bold hover:bg-[#ffb342] shadow-lg shadow-orange-500/20'
+                                : 'bg-white/5 hover:bg-white/10 border border-white/10'
                                 }`}
                         >
                             {isSaving ? (
