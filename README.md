@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LeetNtfy
+
+## Table of Contents
+- [Description](#description)
+- [Sneak-Peek](#sneak-peek)
+- [Getting Started](#getting-started)
+- [Contributing](#contributing)
+- [What I Learned](#what-i-learned)
+- [Questions?](#questions)
+
+## Description
+**LeetNtfy** is a personalized LeetCode study notification system designed to keep you consistent with your coding practice. By leveraging the power of `ntfy.sh` and Supabase, LeetNtfy sends tailored algorithm challenges directly to your phone or desktop based on the topics you are currently studying.
+
+This application simplifies the study workflow:
+- **No-Password Access**: Use a unique secret link to manage your settings.
+- **Personalized Topics**: Add the topics you've recently studied to your "Random List" for targeted practice.
+- **One-Tap Management**: Every notification includes a link to instantly adjust your settings.
+- **Cloud Persistence**: Your progress and preferences are securely stored in Supabase.
+
+## Sneak-Peek
+### Architecture Diagram
+![Architecture Diagram](public/architecture.png)
 
 ## Getting Started
+### Prerequisites
+- Node.js (v18+)
+- npm or yarn
+- A Supabase account and project
+- The [ntfy](https://ntfy.sh) app installed on your device
 
-First, run the development server:
-
+### 1. Project Setup
+Clone the project and install dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Environment Configuration
+Create a `.env.local` file with your Supabase credentials:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Database Schema
+Initialize your Supabase database with the following table:
+```sql
+CREATE TABLE users (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  leetcode_username text NOT NULL,
+  secret_key uuid NOT NULL DEFAULT gen_random_uuid(),
+  topics text[] DEFAULT '{}',
+  notification_frequency text DEFAULT 'daily',
+  created_at timestamptz DEFAULT now()
+);
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 4. Run Locally
+```bash
+npm run dev
+```
+Visit `http://localhost:3000` to get started.
 
-## Learn More
+## Contributing
+Contributions are always welcome! Please feel free to submit a Pull Request.
 
-To learn more about Next.js, take a look at the following resources:
+## What I Learned
+Building LeetNtfy provided hands-on experience in:
+- **Serverless Notifications**: Integrating `ntfy.sh` for reliable, cross-platform push notifications without a complex backend.
+- **Frictionless Auth**: Implementing a "Secret Link" authentication system to maximize user onboarding.
+- **Next.js App Router**: Utilizing Server Components and Dynamic Routes for a fast, modern web experience.
+- **Supabase Integration**: Managing relational data and real-time updates with ease.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Questions?
+<img src="https://github.com/makendymidouin.png" width="100" height="100" style="border-radius: 50%;" />
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+For any questions, please contact me:
+Email: <Midouinmakendy@gmail.com>
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+**About**
+A personalized LeetCode study reminder that nudges you to practice the topics you care about. Built with Next.js, Supabase, and ntfy.sh.
