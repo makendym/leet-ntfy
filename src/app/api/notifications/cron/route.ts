@@ -20,9 +20,13 @@ export async function GET(request: Request) {
 
         if (error) throw error;
 
+        console.log(`Fetched ${users?.length || 0} users from Supabase`);
+
         const results = [];
         const now = new Date();
         const currentHour = now.getHours();
+
+        console.log(`Current hour (UTC): ${currentHour}`);
 
         // Don't send anything before 8 AM
         if (currentHour < 8) {
@@ -115,7 +119,12 @@ export async function GET(request: Request) {
             results.push({ username: user.leetcode_username, success, newQuestion: shouldUpdateUser });
         }
 
-        return NextResponse.json({ status: 'success', processed: results.length, details: results });
+        return NextResponse.json({
+            status: 'success',
+            processed: results.length,
+            fetchedUsers: users?.length || 0,
+            details: results
+        });
     } catch (error: any) {
         console.error('Cron job failed:', error);
         return NextResponse.json({ status: 'error', message: error.message }, { status: 500 });
