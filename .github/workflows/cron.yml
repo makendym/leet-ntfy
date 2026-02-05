@@ -1,0 +1,14 @@
+name: Hourly LeetNtfy Cron
+on:
+  schedule:
+    - cron: '0 * * * *' # Every hour
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  cron:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Cron Endpoint
+        run: |
+          curl -f -X GET "https://leet-ntfy-1z16.vercel.app/api/notifications/cron" \
+               -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
