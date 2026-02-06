@@ -12,11 +12,15 @@ export class NotificationService {
                 'Title': sanitize(payload.title),
             };
 
+            if (payload.priority) {
+                headers['Priority'] = payload.priority.toString();
+            }
+
+            if (payload.tags && payload.tags.length > 0) {
+                headers['Tags'] = payload.tags.join(',');
+            }
+
             if (payload.actions && payload.actions.length > 0) {
-                // ntfy Click header format: label, url; label, url
-                const clickActions = payload.actions
-                    .map(a => `${sanitize(a.label)}, ${a.url}`)
-                    .join('; ');
                 headers['Click'] = payload.actions[0].url; // Default click
                 headers['Actions'] = payload.actions.map(a => `view, ${sanitize(a.label)}, ${a.url}`).join('; ');
             }
