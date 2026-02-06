@@ -7,6 +7,7 @@ export interface UserProfile {
     current_question_slug?: string;
     current_question_title?: string;
     last_notified_at?: string;
+    timezone?: string;
     created_at: string;
 }
 

@@ -9,18 +9,25 @@ export class StudyService {
         const topics = (user.topics && user.topics.length > 0) ? user.topics : ['Array'];
 
         const now = new Date();
-        const currentHour = now.getHours();
+        const userTimezone = user.timezone || 'America/New_York';
+
+        // Use Intl to get the hour in the user's timezone
+        const currentHour = parseInt(new Intl.DateTimeFormat('en-US', {
+            hour: 'numeric',
+            hour12: false,
+            timeZone: userTimezone
+        }).format(now));
 
         // Safety checks (skipped for manual triggers)
         if (!isManual) {
-            // Don't send anything before 8 AM
-            if (currentHour < 8) return { success: false, reason: 'Too early' };
+            // Don't send anything before 8 AM in user's timezone
+            if (currentHour < 8) return { success: false, reason: `Too early (${currentHour}h in ${userTimezone})` };
 
-            // 3-hour gap safety check
+            // 5-minute gap safety check (reduced from 3 hours for testing)
             if (user.last_notified_at) {
                 const lastNotified = new Date(user.last_notified_at).getTime();
-                const diffHours = (now.getTime() - lastNotified) / (1000 * 60 * 60);
-                if (diffHours < 3) return { success: false, reason: 'Cooldown active' };
+                const diffMinutes = (now.getTime() - lastNotified) / (1000 * 60);
+                if (diffMinutes < 5) return { success: false, reason: 'Cooldown active (5 min)' };
             }
         }
 

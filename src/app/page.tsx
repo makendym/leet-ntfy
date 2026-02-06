@@ -26,11 +26,14 @@ export default function Home() {
         return;
       }
 
-      // Call API to setup user
+      // 3. Call API to setup user
       const response = await fetch('/api/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({
+          username,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        }),
       });
 
       const data = await response.json();

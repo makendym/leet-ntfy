@@ -27,11 +27,16 @@ export class UserRepository {
         return data;
     }
 
-    static async create(username: string): Promise<UserProfile | null> {
+    static async create(username: string, timezone: string = 'America/New_York'): Promise<UserProfile | null> {
         const { data, error } = await supabase
             .from('users')
             .insert([
-                { leetcode_username: username, notification_frequency: 'daily', topics: ['Array'] }
+                {
+                    leetcode_username: username,
+                    notification_frequency: 'daily',
+                    topics: ['Array'],
+                    timezone: timezone
+                }
             ])
             .select()
             .single();

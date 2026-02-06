@@ -3,7 +3,7 @@ import { UserRepository } from '@/lib/repositories/UserRepository';
 
 export async function POST(request: Request) {
     try {
-        const { username } = await request.json();
+        const { username, timezone = 'America/New_York' } = await request.json();
 
         if (!username) {
             return NextResponse.json({ error: 'Username is required' }, { status: 400 });
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
 
         // 2. If not, create them
         if (!user) {
-            user = await UserRepository.create(username);
+            user = await UserRepository.create(username, timezone);
         }
 
         if (!user) {
