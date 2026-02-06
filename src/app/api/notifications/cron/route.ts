@@ -11,12 +11,11 @@ export async function GET(request: Request) {
     }
 
     try {
-        // 2. Fetch all users who want notifications (Filtered for TEST user only)
+        // 2. Fetch all users who want notifications
         const { data: users, error } = await supabase
             .from('users')
             .select('*')
-            .neq('notification_frequency', 'none')
-            .eq('id', '19290961-f1cb-4858-a8d8-3e5acd2e8893'); // TEMPORARY FILTER FOR TESTING
+            .neq('notification_frequency', 'none');
 
         if (error) throw error;
 

@@ -20,14 +20,14 @@ export class StudyService {
 
         // Safety checks (skipped for manual triggers and forced resets)
         if (!isManual && !forceNewQuestion) {
-            // Don't send anything before 0 AM in user's timezone (Set to 0 for Testing)
-            if (currentHour < 0) return { success: false, reason: `Too early (${currentHour}h in ${userTimezone})` };
+            // Don't send anything before 8 AM in user's timezone
+            if (currentHour < 8) return { success: false, reason: `Too early (${currentHour}h in ${userTimezone})` };
 
-            // 5-minute gap safety check (reduced from 3 hours for testing)
+            // 2-hour gap safety check
             if (user.last_notified_at) {
                 const lastNotified = new Date(user.last_notified_at).getTime();
                 const diffMinutes = (now.getTime() - lastNotified) / (1000 * 60);
-                if (diffMinutes < 5) return { success: false, reason: 'Cooldown active (5 min)' };
+                if (diffMinutes < 120) return { success: false, reason: 'Cooldown active (2 hours)' };
             }
         }
 
