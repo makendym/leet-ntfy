@@ -68,7 +68,7 @@ export class StudyService {
         const templates = [
             { title: 'Daily Nudge', message: `Here's your next problem: ${question.title}. Let's go.` },
             { title: 'Time to Practice', message: `Solve today's problem: ${question.title}.` },
-            { title: 'Reminder', message: `Your problem for today: ${question.title}. Time to tackle.` }
+            { title: 'Reminder', message: `Your problem for today: ${question.title}. Time to tackle it.` }
         ];
 
         const selected = pick(templates);
