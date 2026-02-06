@@ -15,6 +15,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "LeetNtfy - LeetCode Study Reminders",
   description: "Get personalized LeetCode algorithm challenges delivered straight to your phone. No logins, just consistent practice.",
+  themeColor: "#0a0a0a",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "LeetNtfy",
+  },
 };
 
 export default function RootLayout({
