@@ -20,6 +20,14 @@ export class NotificationService {
                 headers['Tags'] = payload.tags.join(',');
             }
 
+            if (payload.image) {
+                headers['Attach'] = payload.image;
+            }
+
+            if (payload.icon) {
+                headers['Icon'] = payload.icon;
+            }
+
             if (payload.actions && payload.actions.length > 0) {
                 headers['Click'] = payload.actions[0].url; // Default click
                 headers['Actions'] = payload.actions.map(a => `view, ${sanitize(a.label)}, ${a.url}`).join('; ');

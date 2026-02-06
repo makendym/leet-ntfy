@@ -38,6 +38,8 @@ export interface NotificationPayload {
     topic: string;
     tags?: string[];
     priority?: 1 | 2 | 3 | 4 | 5;
+    image?: string;
+    icon?: string;
     actions?: Array<{
         label: string;
         url: string;

@@ -82,6 +82,8 @@ export class StudyService {
             message,
             topic: user.secret_key,
             priority,
+            icon: `${process.env.NEXT_PUBLIC_APP_URL}/icon.png`,
+            image: `https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=1000&auto=format&fit=crop`, // Generic code image
             actions: [
                 { label: 'Solve Now', url: question.url },
                 { label: 'Manage Settings', url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/${user.secret_key}` }
