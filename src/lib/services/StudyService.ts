@@ -52,7 +52,7 @@ export class StudyService {
                 // --- SUCCESS CELEBRATION FLOW ---
                 // 1. Send immediate success notification
                 await NotificationService.sendNotification({
-                    title: 'Challenge Completed! 🎉',
+                    title: 'Challenge Completed',
                     message: `Amazing work! You've solved ${user.current_question_title || 'the challenge'}. Enjoy your win!`,
                     topic: user.secret_key,
                     priority: 5, // Max priority for celebration
@@ -89,9 +89,9 @@ export class StudyService {
         const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
         const templates = [
-            { title: 'Daily Nudge', message: `Here's your next problem: ${question.title}. LET'S GO! 🚀` },
+            { title: 'Daily Nudge', message: `Here's your next problem: ${question.title}. LET'S GO!` },
             { title: 'Time to Practice', message: `CRUSH today's problem: ${question.title}.` },
-            { title: 'Reminder', message: `Your problem for today: ${question.title}. Time to TACKLE it! 🔥` }
+            { title: 'Reminder', message: `Your problem for today: ${question.title}. Time to TACKLE it!` }
         ];
 
         const selected = pick(templates);
