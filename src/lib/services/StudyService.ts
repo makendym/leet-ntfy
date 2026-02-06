@@ -20,8 +20,8 @@ export class StudyService {
 
         // Safety checks (skipped for manual triggers)
         if (!isManual) {
-            // Don't send anything before 8 AM in user's timezone
-            if (currentHour < 8) return { success: false, reason: `Too early (${currentHour}h in ${userTimezone})` };
+            // Don't send anything before 0 AM in user's timezone (Set to 0 for Testing)
+            if (currentHour < 0) return { success: false, reason: `Too early (${currentHour}h in ${userTimezone})` };
 
             // 5-minute gap safety check (reduced from 3 hours for testing)
             if (user.last_notified_at) {
