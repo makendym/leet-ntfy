@@ -1,0 +1,14 @@
+name: LeetNtfy Daily Reset
+on:
+  schedule:
+    - cron: '5 * * * *' # Every hour (at 5 minutes past)
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Reset Endpoint
+        run: |
+          curl -f -X GET "https://leet-ntfy-1z16.vercel.app/api/notifications/reset" \
+               -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

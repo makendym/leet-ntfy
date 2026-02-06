@@ -4,7 +4,7 @@ import { NotificationService } from './NotificationService';
 import { UserProfile } from '../types';
 
 export class StudyService {
-    static async sendStudyNudge(user: UserProfile, isManual: boolean = false) {
+    static async sendStudyNudge(user: UserProfile, isManual: boolean = false, forceNewQuestion: boolean = false) {
         // Fallback for empty topics
         const topics = (user.topics && user.topics.length > 0) ? user.topics : ['Array'];
 
@@ -18,8 +18,8 @@ export class StudyService {
             timeZone: userTimezone
         }).format(now));
 
-        // Safety checks (skipped for manual triggers)
-        if (!isManual) {
+        // Safety checks (skipped for manual triggers and forced resets)
+        if (!isManual && !forceNewQuestion) {
             // Don't send anything before 0 AM in user's timezone (Set to 0 for Testing)
             if (currentHour < 0) return { success: false, reason: `Too early (${currentHour}h in ${userTimezone})` };
 
@@ -32,11 +32,11 @@ export class StudyService {
         }
 
         let question;
-        let shouldUpdateUser = false;
+        let shouldUpdateUser = forceNewQuestion;
         const updates: Partial<UserProfile> = {};
 
-        // Check if user has an active question
-        if (user.current_question_slug) {
+        // Check if user has an active question (skip if forcing new one)
+        if (!shouldUpdateUser && user.current_question_slug) {
             const isSolved = await LeetCodeService.isQuestionSolved(
                 user.leetcode_username,
                 user.current_question_slug
@@ -52,7 +52,7 @@ export class StudyService {
                 // Solved! Clear and pick a new one
                 shouldUpdateUser = true;
             }
-        } else {
+        } else if (!user.current_question_slug) {
             // No active question, pick a new one
             shouldUpdateUser = true;
         }
@@ -81,7 +81,13 @@ export class StudyService {
         const selected = pick(templates);
         let title = selected.title;
         let message = selected.message;
-        let priority: 1 | 2 | 3 | 4 | 5 = shouldUpdateUser ? 4 : 3;
+        let priority: 1 | 2 | 3 | 4 | 5 = (shouldUpdateUser || forceNewQuestion) ? 4 : 3;
+
+        // If it's a forced reset, use a more distinct title
+        if (forceNewQuestion) {
+            title = `New Day, New Goal`;
+            message = `Fresh start for today: ${question.title}. You've got this!`;
+        }
 
         // Send the ntfy notification
         const success = await NotificationService.sendNotification({
@@ -93,13 +99,17 @@ export class StudyService {
             image: `https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=1000&auto=format&fit=crop`, // Generic code image
             actions: [
                 { label: 'Solve Now', url: question.url },
-                { label: 'Manage Settings', url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/${user.secret_key}` }
+                { label: 'Try Another', url: `${process.env.NEXT_PUBLIC_APP_URL}/api/user/shuffle?key=${user.secret_key}` },
+                { label: 'Settings', url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/${user.secret_key}` }
             ]
         });
 
         if (success) {
             // Update last notified time and any question changes
             updates.last_notified_at = now.toISOString();
+            if (forceNewQuestion) {
+                updates.last_reset_at = now.toISOString().split('T')[0]; // Store only date
+            }
             await supabase.from('users').update(updates).eq('id', user.id);
         }
 
