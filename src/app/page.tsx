@@ -92,7 +92,7 @@ export default function Home() {
             >
               {isLoading ? 'Wait...' : (
                 <>
-                  Let's Go
+                  Let&apos;s Go
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
