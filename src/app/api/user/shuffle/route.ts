@@ -24,9 +24,9 @@ export async function GET(request: Request) {
             <html>
                 <body style="background: #0a0a0a; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; text-align: center;">
                     <div>
-                        <h1 style="color: #ffa116;">Shuffled! 🎲</h1>
-                        <p>We've sent a new challenge to your phone.</p>
-                        <p style="color: #666; font-size: 0.8rem;">You can close this window now.</p>
+                        <h1 style="color: #ffa116; font-size: 3rem;">Shuffled!</h1>
+                        <p style="font-size: 1.5rem;">We've sent a new challenge to your phone.</p>
+                        <p style="color: #666; font-size: 1.5rem;">You can close this window now.</p>
                     </div>
                 </body>
             </html>

@@ -9,6 +9,7 @@ export interface UserProfile {
     last_notified_at?: string;
     last_reset_at?: string;
     timezone?: string;
+    difficulties?: string[];
     created_at: string;
 }
 

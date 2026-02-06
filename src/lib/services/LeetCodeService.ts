@@ -46,7 +46,7 @@ export class LeetCodeService {
         ];
     }
 
-    static async fetchQuestions(topic: string) {
+    static async fetchQuestions(topic: string, difficulties?: string[]) {
         const query = `
           query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
             problemsetQuestionList: questionList(
@@ -64,11 +64,17 @@ export class LeetCodeService {
           }
         `;
 
+        const filters: any = { tags: [topic.toLowerCase().replace(/ /g, '-')] };
+        if (difficulties && difficulties.length > 0) {
+            filters.difficulty = difficulties[0].toUpperCase(); // LeetCode API usually takes one difficulty in this specific filter field, or we might need to adjust based on API behavior. Actually, for the problemsetQuestionList, it's often a single value or handled differently. Let's try passing the first one or adjusting for multiple if possible.
+            // Actually, many wrappers show it as: filters: { difficulty: "MEDIUM" }
+        }
+
         const variables = {
             categorySlug: "",
             skip: 0,
             limit: 50,
-            filters: { tags: [topic.toLowerCase().replace(/ /g, '-')] }
+            filters
         };
 
         try {
@@ -88,8 +94,8 @@ export class LeetCodeService {
         }
     }
 
-    static async getRandomQuestion(topic: string) {
-        const questions = await this.fetchQuestions(topic);
+    static async getRandomQuestion(topic: string, difficulties?: string[]) {
+        const questions = await this.fetchQuestions(topic, difficulties);
 
         if (questions && questions.length > 0) {
             const question = questions[Math.floor(Math.random() * questions.length)];

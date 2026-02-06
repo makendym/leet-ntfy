@@ -35,7 +35,8 @@ export class UserRepository {
                     leetcode_username: username,
                     notification_frequency: 'daily',
                     topics: ['Array'],
-                    timezone: timezone
+                    timezone: timezone,
+                    difficulties: ['Easy', 'Medium']
                 }
             ])
             .select()

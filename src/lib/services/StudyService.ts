@@ -59,7 +59,7 @@ export class StudyService {
 
         if (shouldUpdateUser) {
             const randomTopic = topics[Math.floor(Math.random() * topics.length)];
-            question = await LeetCodeService.getRandomQuestion(randomTopic);
+            question = await LeetCodeService.getRandomQuestion(randomTopic, user.difficulties);
 
             // Track this as the new current question
             const slug = question.url.split('/problems/')[1]?.replace(/\/$/, '');

@@ -77,6 +77,37 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
         }
     };
 
+    const toggleDifficulty = async (difficulty: string) => {
+        if (!user) return;
+
+        const currentDiffs = user.difficulties || ['Easy', 'Medium'];
+        const isRemoving = currentDiffs.includes(difficulty);
+
+        // Prevent removing the last difficulty
+        if (isRemoving && currentDiffs.length <= 1) {
+            return;
+        }
+
+        const newDiffs = isRemoving
+            ? currentDiffs.filter(d => d !== difficulty)
+            : [...currentDiffs, difficulty];
+
+        setUser({ ...user, difficulties: newDiffs });
+
+        setIsSaving(true);
+        try {
+            await fetch(`/api/user/settings`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ secretKey, difficulties: newDiffs }),
+            });
+        } catch (err) {
+            console.error('Failed to save difficulties:', err);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const testNotification = async () => {
         if (!user) return;
         setNudgeStatus('loading');
@@ -133,12 +164,12 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                             onClick={testNotification}
                             disabled={nudgeStatus !== 'idle'}
                             className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm transition-all flex items-center justify-center gap-2 ${nudgeStatus === 'success'
-                                    ? 'bg-green-600 text-white'
-                                    : nudgeStatus === 'error'
-                                        ? 'bg-red-600 text-white'
-                                        : !user?.current_question_slug
-                                            ? 'bg-[#ffa116] text-black font-bold hover:bg-[#ffb342] shadow-lg shadow-orange-500/20'
-                                            : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                                ? 'bg-green-600 text-white'
+                                : nudgeStatus === 'error'
+                                    ? 'bg-red-600 text-white'
+                                    : !user?.current_question_slug
+                                        ? 'bg-[#ffa116] text-black font-bold hover:bg-[#ffb342] shadow-lg shadow-orange-500/20'
+                                        : 'bg-white/5 hover:bg-white/10 border border-white/10'
                                 }`}
                         >
                             {nudgeStatus === 'loading' ? (
@@ -280,6 +311,37 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                                     >
                                         {user?.topics.includes(topic) ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
                                         {topic}
+                                    </button>
+                                ))}
+                            </div>
+                        </section>
+
+                        <section className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
+                            <h2 className="text-lg font-semibold flex items-center gap-2">
+                                <Zap className="w-5 h-5 text-[#ffa116]" />
+                                Challenge Level
+                            </h2>
+                            <p className="text-sm text-gray-400">Select the difficulty levels you want to be challenged with.</p>
+
+                            <div className="flex gap-4">
+                                {['Easy', 'Medium', 'Hard'].map(diff => (
+                                    <button
+                                        key={diff}
+                                        onClick={() => toggleDifficulty(diff)}
+                                        className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all border flex flex-col items-center gap-2 ${user?.difficulties?.includes(diff)
+                                            ? diff === 'Easy' ? 'bg-green-500/10 border-green-500/50 text-green-500' :
+                                                diff === 'Medium' ? 'bg-orange-500/10 border-orange-500/50 text-[#ffa116]' :
+                                                    'bg-red-500/10 border-red-500/50 text-red-500'
+                                            : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/30'
+                                            }`}
+                                    >
+                                        <div className={`w-2 h-2 rounded-full ${user?.difficulties?.includes(diff)
+                                            ? diff === 'Easy' ? 'bg-green-500' :
+                                                diff === 'Medium' ? 'bg-[#ffa116]' :
+                                                    'bg-red-500'
+                                            : 'bg-gray-700'
+                                            }`} />
+                                        {diff}
                                     </button>
                                 ))}
                             </div>
