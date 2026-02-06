@@ -89,9 +89,9 @@ export class StudyService {
         const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
         const templates = [
-            { title: 'Daily Nudge', message: `Here's your next problem: ${question.title}. Let's go.` },
-            { title: 'Time to Practice', message: `Solve today's problem: ${question.title}.` },
-            { title: 'Reminder', message: `Your problem for today: ${question.title}. Time to tackle it.` }
+            { title: 'Daily Nudge', message: `Here's your next problem: ${question.title}. LET'S GO! 🚀` },
+            { title: 'Time to Practice', message: `CRUSH today's problem: ${question.title}.` },
+            { title: 'Reminder', message: `Your problem for today: ${question.title}. Time to TACKLE it! 🔥` }
         ];
 
         const selected = pick(templates);
