@@ -23,16 +23,7 @@ export async function POST(request: Request) {
         }
 
         // 2. Trigger nudge manually (bypasses safety checks)
-        // If debug params provided, we set them on the user object temporarily
-        const { problemSlug, problemTitle } = await request.clone().json();
-        const testUser = { ...user } as UserProfile;
-
-        if (problemSlug && problemTitle) {
-            testUser.current_question_slug = problemSlug;
-            testUser.current_question_title = problemTitle;
-        }
-
-        const result = await StudyService.sendStudyNudge(testUser, true);
+        const result = await StudyService.sendStudyNudge(user as UserProfile, true);
 
         if (!result.success) {
             return NextResponse.json({ error: result.reason || 'Failed to send nudge' }, { status: 500 });
