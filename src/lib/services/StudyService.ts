@@ -1,4 +1,4 @@
-import { supabase } from '../supabase';
+import { supabaseAdmin as supabase } from '../supabaseAdmin';
 import { LeetCodeService } from './LeetCodeService';
 import { NotificationService } from './NotificationService';
 import { UserProfile } from '../types';
