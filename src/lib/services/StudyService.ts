@@ -65,34 +65,11 @@ export class StudyService {
         // Messaging Logic
         let title = `Your daily nudge: ${topics[0]}`;
         let message = `Solve: ${question.title}`;
-        let tags: string[] = ['brain'];
         let priority: 1 | 2 | 3 | 4 | 5 = 3;
 
-        const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
-
         if (shouldUpdateUser) {
-            // NEW QUESTION
             priority = 4;
-            tags = ['star', 'rocket'];
             title = `New Challenge: ${topics[0]}`;
-            message = `Time to tackle: ${question.title}`;
-        } else {
-            // NUDGE
-            priority = 3;
-            tags = ['fire', 'muscle'];
-
-            // Subtle time-based variety but keeping it simple
-            if (currentHour < 12) {
-                title = `Morning Nudge: ${topics[0]}`;
-            } else if (currentHour < 17) {
-                title = `Afternoon Nudge: ${topics[0]}`;
-            } else if (currentHour < 21) {
-                title = `Evening Nudge: ${topics[0]}`;
-            } else {
-                title = `Late Nudge: ${topics[0]}`;
-            }
-
-            message = `Goal: Finish ${question.title}`;
         }
 
         // Send the ntfy notification
@@ -100,7 +77,6 @@ export class StudyService {
             title,
             message,
             topic: user.secret_key,
-            tags,
             priority,
             actions: [
                 { label: 'Solve Now', url: question.url },
