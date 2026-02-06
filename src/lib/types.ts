@@ -4,8 +4,8 @@ export interface UserProfile {
     secret_key: string;
     topics: string[];
     notification_frequency: 'daily' | 'weekly' | 'none';
-    current_question_slug?: string;
-    current_question_title?: string;
+    current_question_slug?: string | null;
+    current_question_title?: string | null;
     last_notified_at?: string;
     last_reset_at?: string;
     timezone?: string;

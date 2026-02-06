@@ -49,11 +49,27 @@ export class StudyService {
                     url: `https://leetcode.com/problems/${user.current_question_slug}/`
                 };
             } else {
-                // Solved! Clear and pick a new one
-                shouldUpdateUser = true;
+                // --- SUCCESS CELEBRATION FLOW ---
+                // 1. Send immediate success notification
+                await NotificationService.sendNotification({
+                    title: 'Challenge Completed! 🎉',
+                    message: `Amazing work! You've solved ${user.current_question_title || 'the challenge'}. Enjoy your win!`,
+                    topic: user.secret_key,
+                    priority: 5, // Max priority for celebration
+                    icon: `${process.env.NEXT_PUBLIC_APP_URL}/icon.png`,
+                    image: `https://images.unsplash.com/photo-1550305080-4e0455ca7bc4?q=80&w=1000&auto=format&fit=crop`, // Trophy/Celebration image
+                });
+
+                // 2. Clear the current question so we don't notify success twice
+                updates.current_question_slug = null;
+                updates.current_question_title = null;
+                updates.last_notified_at = now.toISOString();
+                await supabase.from('users').update(updates).eq('id', user.id);
+
+                return { success: true, status: 'celebrated', username: user.leetcode_username };
             }
-        } else if (!user.current_question_slug) {
-            // No active question, pick a new one
+        } else if (!user.current_question_slug || shouldUpdateUser) {
+            // No active question or shuffle requested, pick a new one
             shouldUpdateUser = true;
         }
 
