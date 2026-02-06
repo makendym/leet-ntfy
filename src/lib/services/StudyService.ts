@@ -63,7 +63,7 @@ export class StudyService {
         if (!question) return { success: false, reason: 'Question fetch failed' };
 
         // Messaging Logic
-        let title = `Daily Nudge: ${topics[0]}`;
+        let title = `Your daily nudge: ${topics[0]}`;
         let message = `Solve: ${question.title}`;
         let tags: string[] = ['brain'];
         let priority: 1 | 2 | 3 | 4 | 5 = 3;
