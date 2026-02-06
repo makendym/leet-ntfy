@@ -63,14 +63,18 @@ export class StudyService {
         if (!question) return { success: false, reason: 'Question fetch failed' };
 
         // Messaging Logic
-        let title = `Your daily nudge: ${topics[0]}`;
-        let message = `Solve: ${question.title}`;
-        let priority: 1 | 2 | 3 | 4 | 5 = 3;
+        const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
-        if (shouldUpdateUser) {
-            priority = 4;
-            title = `New Challenge: ${topics[0]}`;
-        }
+        const templates = [
+            { title: 'Daily Nudge', message: `Here's your next problem: ${question.title}. Let's go.` },
+            { title: 'Time to Practice', message: `Solve today's problem: ${question.title}.` },
+            { title: 'Reminder', message: `Your problem for today: ${question.title}. Time to tackle.` }
+        ];
+
+        const selected = pick(templates);
+        let title = selected.title;
+        let message = selected.message;
+        let priority: 1 | 2 | 3 | 4 | 5 = shouldUpdateUser ? 4 : 3;
 
         // Send the ntfy notification
         const success = await NotificationService.sendNotification({
