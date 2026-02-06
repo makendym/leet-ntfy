@@ -5,7 +5,8 @@ import { UserProfile } from '../types';
 
 export class StudyService {
     static async sendStudyNudge(user: UserProfile, isManual: boolean = false) {
-        if (!user.topics || user.topics.length === 0) return { success: false, reason: 'No topics' };
+        // Fallback for empty topics
+        const topics = (user.topics && user.topics.length > 0) ? user.topics : ['Array'];
 
         const now = new Date();
         const currentHour = now.getHours();
@@ -50,7 +51,7 @@ export class StudyService {
         }
 
         if (shouldUpdateUser) {
-            const randomTopic = user.topics[Math.floor(Math.random() * user.topics.length)];
+            const randomTopic = topics[Math.floor(Math.random() * topics.length)];
             question = await LeetCodeService.getRandomQuestion(randomTopic);
 
             // Track this as the new current question
@@ -63,10 +64,10 @@ export class StudyService {
 
         // Get message
         let message = `Today's Challenge: ${question.title}. You've got this!`;
-        let title = `Daily Challenge: ${user.topics[0]}`;
+        let title = `Daily Challenge: ${topics[0]}`;
 
         if (!shouldUpdateUser) {
-            title = `Encouraging Nudge: ${user.topics[0]}`;
+            title = `Encouraging Nudge: ${topics[0]}`;
             if (currentHour >= 8 && currentHour < 12) {
                 message = `Fresh start! Give ${question.title} a quick look whenever you're ready.`;
             } else if (currentHour >= 12 && currentHour < 17) {

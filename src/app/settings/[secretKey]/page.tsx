@@ -17,6 +17,8 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isHelpOpen, setIsHelpOpen] = useState(true);
+    const [isCopied, setIsCopied] = useState(false);
+    const [nudgeStatus, setNudgeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
     useEffect(() => {
         async function init() {
@@ -46,7 +48,15 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
 
     const toggleTopic = async (topic: string) => {
         if (!user) return;
-        const newTopics = user.topics.includes(topic)
+
+        const isRemoving = user.topics.includes(topic);
+
+        // Prevent removing the last topic
+        if (isRemoving && user.topics.length <= 1) {
+            return;
+        }
+
+        const newTopics = isRemoving
             ? user.topics.filter(t => t !== topic)
             : [...user.topics, topic];
 
@@ -54,17 +64,22 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
 
         // Auto-save logic
         setIsSaving(true);
-        await fetch(`/api/user/settings`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ secretKey, topics: newTopics }),
-        });
-        setIsSaving(false);
+        try {
+            await fetch(`/api/user/settings`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ secretKey, topics: newTopics }),
+            });
+        } catch (err) {
+            console.error('Failed to save topics:', err);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const testNotification = async () => {
         if (!user) return;
-        setIsSaving(true);
+        setNudgeStatus('loading');
         try {
             const res = await fetch(`/api/user/nudge`, {
                 method: 'POST',
@@ -74,19 +89,21 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
             const data = await res.json();
 
             if (res.ok) {
-                alert('Success! A study challenge has been sent to your phone.');
+                setNudgeStatus('success');
                 // Refresh user data to show the new question status
                 const userRes = await fetch(`/api/user/settings?secretKey=${secretKey}`);
                 const userData = await userRes.json();
                 setUser(userData);
+
+                setTimeout(() => setNudgeStatus('idle'), 3000);
             } else {
-                alert(`Note: ${data.error || 'Check your ntfy app subscriptions.'}`);
+                setNudgeStatus('error');
+                setTimeout(() => setNudgeStatus('idle'), 3000);
             }
         } catch (err) {
             console.error(err);
-            alert('Failed to send notification. Check your internet or topic settings.');
-        } finally {
-            setIsSaving(false);
+            setNudgeStatus('error');
+            setTimeout(() => setNudgeStatus('idle'), 3000);
         }
     };
 
@@ -114,14 +131,25 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                     <div className="flex gap-2 w-full sm:w-auto">
                         <button
                             onClick={testNotification}
-                            disabled={isSaving}
-                            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm transition-all flex items-center justify-center gap-2 ${!user?.current_question_slug
-                                ? 'bg-[#ffa116] text-black font-bold hover:bg-[#ffb342] shadow-lg shadow-orange-500/20'
-                                : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                            disabled={nudgeStatus !== 'idle'}
+                            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm transition-all flex items-center justify-center gap-2 ${nudgeStatus === 'success'
+                                    ? 'bg-green-600 text-white'
+                                    : nudgeStatus === 'error'
+                                        ? 'bg-red-600 text-white'
+                                        : !user?.current_question_slug
+                                            ? 'bg-[#ffa116] text-black font-bold hover:bg-[#ffb342] shadow-lg shadow-orange-500/20'
+                                            : 'bg-white/5 hover:bg-white/10 border border-white/10'
                                 }`}
                         >
-                            {isSaving ? (
+                            {nudgeStatus === 'loading' ? (
                                 <RefreshCcw className="w-4 h-4 animate-spin" />
+                            ) : nudgeStatus === 'success' ? (
+                                <>
+                                    <Check className="w-4 h-4" />
+                                    Sent!
+                                </>
+                            ) : nudgeStatus === 'error' ? (
+                                'Try Again'
                             ) : !user?.current_question_slug ? (
                                 <>
                                     <Zap className="w-4 h-4 fill-current" />
@@ -181,12 +209,17 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                                         <button
                                             onClick={() => {
                                                 navigator.clipboard.writeText(user?.secret_key || '');
-                                                alert('Topic code copied!');
+                                                setIsCopied(true);
+                                                setTimeout(() => setIsCopied(false), 2000);
                                             }}
                                             className="w-full p-2 bg-white/5 border border-white/10 rounded-xl flex items-center justify-between group hover:border-[#ffa116]/50 transition-all"
                                         >
                                             <code className="text-gray-300 text-xs font-mono truncate mr-2">{user?.secret_key}</code>
-                                            <Copy className="w-4 h-4 text-[#ffa116] group-hover:scale-110 transition-transform" />
+                                            {isCopied ? (
+                                                <Check className="w-4 h-4 text-green-500 animate-in fade-in zoom-in" />
+                                            ) : (
+                                                <Copy className="w-4 h-4 text-[#ffa116] group-hover:scale-110 transition-transform" />
+                                            )}
                                         </button>
                                         <div className="flex gap-2">
                                             <a

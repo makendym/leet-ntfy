@@ -31,7 +31,7 @@ export class UserRepository {
         const { data, error } = await supabase
             .from('users')
             .insert([
-                { leetcode_username: username, notification_frequency: 'daily', topics: [] }
+                { leetcode_username: username, notification_frequency: 'daily', topics: ['Array'] }
             ])
             .select()
             .single();
