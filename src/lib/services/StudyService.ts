@@ -63,60 +63,36 @@ export class StudyService {
         if (!question) return { success: false, reason: 'Question fetch failed' };
 
         // Messaging Logic
-        let message = `Today's Challenge: ${question.title}. You've got this!`;
-        let title = `Daily Challenge: ${topics[0]}`;
+        let title = `Daily Nudge: ${topics[0]}`;
+        let message = `Solve: ${question.title}`;
         let tags: string[] = ['brain'];
         let priority: 1 | 2 | 3 | 4 | 5 = 3;
 
         const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
         if (shouldUpdateUser) {
-            // NEW QUESTION - The "Hook"
+            // NEW QUESTION
             priority = 4;
-            tags = ['tada', 'star'];
-            const hooks = [
-                `New challenge unlocked! 🔓`,
-                `Ready to level up? 🚀`,
-                `Today's mission: ${question.title} 🎯`,
-                `Fresh code, fresh perspective! 💻`,
-                `Consistency is key. Here is your daily grind! 🔑`
-            ];
-            const descriptions = [
-                `Time to dive into ${question.title}.`,
-                `You solved the last one, now tackle ${question.title}!`,
-                `Let's conquer ${question.title} today.`,
-                `Ready? ${question.title} is waiting for you.`
-            ];
-            title = pick(hooks);
-            message = pick(descriptions);
+            tags = ['star', 'rocket'];
+            title = `New Challenge: ${topics[0]}`;
+            message = `Time to tackle: ${question.title}`;
         } else {
-            // NUDGE - The "Consistency"
+            // NUDGE
             priority = 3;
-            const nudgeTags = [
-                ['clock9', 'muscle'],
-                ['fire', 'running'],
-                ['eyes', 'thought_balloon'],
-                ['bulb', 'computer']
-            ];
-            tags = pick(nudgeTags);
+            tags = ['fire', 'muscle'];
 
-            if (currentHour >= 8 && currentHour < 12) {
-                const morningHooks = [`Rise and code! ☕️`, `Algorithm for breakfast? 🍳`, `Morning momentum ☀️`];
-                title = pick(morningHooks);
-                message = `Fresh start! Give ${question.title} a quick look whenever you're ready.`;
-            } else if (currentHour >= 12 && currentHour < 17) {
-                const afternoonHooks = [`Brain break time! 🧠`, `Beat the slump ⚡️`, `Mid-day logic check 🧩`];
-                title = pick(afternoonHooks);
-                message = `You're more than capable of handling ${question.title}. Let's go!`;
-            } else if (currentHour >= 17 && currentHour < 21) {
-                const eveningHooks = [`Evening focus 🌙`, `One more before relax? 🛋️`, `Wrap up with a win 🏆`];
-                title = pick(eveningHooks);
-                message = `Great time for some deep work. ${question.title} is waiting.`;
+            // Subtle time-based variety but keeping it simple
+            if (currentHour < 12) {
+                title = `Morning Nudge: ${topics[0]}`;
+            } else if (currentHour < 17) {
+                title = `Afternoon Nudge: ${topics[0]}`;
+            } else if (currentHour < 21) {
+                title = `Evening Nudge: ${topics[0]}`;
             } else {
-                const lateHooks = [`Night owl session? 🦉`, `Before you sleep... 🛌`, `Last push of the day! 🏁`];
-                title = pick(lateHooks);
-                message = `Feel great crossing ${question.title} off your list before tomorrow!`;
+                title = `Late Nudge: ${topics[0]}`;
             }
+
+            message = `Goal: Finish ${question.title}`;
         }
 
         // Send the ntfy notification
