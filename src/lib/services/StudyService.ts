@@ -27,7 +27,7 @@ export class StudyService {
             if (user.last_notified_at) {
                 const lastNotified = new Date(user.last_notified_at).getTime();
                 const diffMinutes = (now.getTime() - lastNotified) / (1000 * 60);
-                if (diffMinutes < 120) return { success: false, reason: 'Cooldown active (2 hours)' };
+                if (diffMinutes < 180) return { success: false, reason: 'Cooldown active (3 hours)' };
             }
         }
 
