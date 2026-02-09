@@ -4,12 +4,19 @@ import { StudyService } from '../lib/services/StudyService';
 import { LeetCodeService } from '../lib/services/LeetCodeService';
 import { NotificationService } from '../lib/services/NotificationService';
 import { supabaseAdmin } from '../lib/supabaseAdmin';
-import { UserProfile } from '../types';
+import { UserProfile } from '../lib/types';
 
 // Use vi.mock at the top level to intercept all calls
-vi.mock('../lib/supabaseAdmin');
-vi.mock('./LeetCodeService');
-vi.mock('./NotificationService');
+vi.mock('../lib/supabaseAdmin', () => ({
+    supabaseAdmin: {
+        from: vi.fn().mockReturnThis(),
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ error: null })
+    },
+    getSupabaseAdmin: vi.fn()
+}));
+vi.mock('../lib/services/LeetCodeService');
+vi.mock('../lib/services/NotificationService');
 
 describe('StudyService Logic', () => {
     const mockUser: UserProfile = {
@@ -21,10 +28,10 @@ describe('StudyService Logic', () => {
         difficulties: ['Easy'],
         timezone: 'America/New_York',
         created_at: new Date().toISOString(),
-        last_notified_at: null,
+        last_notified_at: "2024-01-01T00:00:00Z",
         current_question_slug: null,
         current_question_title: null,
-        last_reset_at: null
+        last_reset_at: "2024-01-01T00:00:00Z"
     };
 
     beforeEach(() => {
