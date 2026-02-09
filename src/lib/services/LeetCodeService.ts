@@ -64,10 +64,18 @@ export class LeetCodeService {
           }
         `;
 
-        const filters: any = { tags: [topic.toLowerCase().replace(/ /g, '-')] };
+        // Improved slug generation (e.g. "Heap (Priority Queue)" -> "heap-priority-queue")
+        const tagSlug = topic.toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[()]/g, '')
+            .replace(/-+/g, '-');
+
+        const filters: any = { tags: [tagSlug] };
+
         if (difficulties && difficulties.length > 0) {
-            filters.difficulty = difficulties[0].toUpperCase(); // LeetCode API usually takes one difficulty in this specific filter field, or we might need to adjust based on API behavior. Actually, for the problemsetQuestionList, it's often a single value or handled differently. Let's try passing the first one or adjusting for multiple if possible.
-            // Actually, many wrappers show it as: filters: { difficulty: "MEDIUM" }
+            // Pick a random difficulty from the selected ones to increase variety
+            const randomDifficulty = difficulties[Math.floor(Math.random() * difficulties.length)];
+            filters.difficulty = randomDifficulty.toUpperCase();
         }
 
         const variables = {
@@ -101,9 +109,12 @@ export class LeetCodeService {
             const question = questions[Math.floor(Math.random() * questions.length)];
             return {
                 title: question.title,
-                url: `https://leetcode.com/problems/${question.titleSlug}/`
+                url: `https://leetcode.com/problems/${question.titleSlug}/`,
+                difficulty: question.difficulty
             };
         }
+
+        console.warn(`No questions found for topic: ${topic} with difficulties: ${difficulties}. Falling back to mock data.`);
 
         // Fallback to mock data if API fails or returns empty
         const mockQuestions: Record<string, string[]> = {
@@ -119,7 +130,8 @@ export class LeetCodeService {
 
         return {
             title,
-            url: `https://leetcode.com/problems/${slug}/`
+            url: `https://leetcode.com/problems/${slug}/`,
+            difficulty: 'Easy' // Default fallback difficulty
         };
     }
 
