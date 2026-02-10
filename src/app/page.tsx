@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell, Code, Zap, ShieldCheck, ArrowRight } from 'lucide-react';
-import { LeetCodeService } from '@/lib/services/LeetCodeService';
 
 export default function Home() {
   const router = useRouter();
@@ -19,12 +18,13 @@ export default function Home() {
     setError(null);
 
     try {
-      const stats = await LeetCodeService.getUserStats(username);
-      if (!stats) {
+      const statsRes = await fetch(`/api/leetcode/stats?username=${username}`);
+      if (!statsRes.ok) {
         setError('Could not find that LeetCode user. Please check the spelling.');
         setIsLoading(false);
         return;
       }
+      const stats = await statsRes.json();
 
       // 3. Call API to setup user
       const response = await fetch('/api/setup', {

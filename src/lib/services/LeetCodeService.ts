@@ -5,33 +5,66 @@ export class LeetCodeService {
     private static readonly GRAPHQL_BASE = 'https://leetcode.com/graphql';
 
     static async getUserStats(username: string): Promise<LeetCodeStats | null> {
-        try {
-            const response = await fetch(`${this.API_BASE}/${username}`);
-            const data = await response.json();
-
-            if (data.status === 'error') {
-                throw new Error(data.message || 'Failed to fetch LeetCode stats');
+        const query = `
+          query getUserProfile($username: String!) {
+            allQuestionsCount {
+              difficulty
+              count
             }
+            matchedUser(username: $username) {
+              username
+              profile {
+                ranking
+              }
+              submitStats {
+                acSubmissionNum {
+                  difficulty
+                  count
+                }
+              }
+            }
+          }
+        `;
+        const variables = { username };
+
+        try {
+            const response = await fetch(this.GRAPHQL_BASE, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, variables }),
+            });
+            const result = await response.json();
+
+            if (result.errors || !result.data.matchedUser) {
+                return null;
+            }
+
+            const data = result.data;
+            const solvedStats = data.matchedUser.submitStats.acSubmissionNum;
+            const totalStats = data.allQuestionsCount;
+
+            const getSolved = (diff: string) => solvedStats.find((s: any) => s.difficulty === diff)?.count || 0;
+            const getTotal = (diff: string) => totalStats.find((s: any) => s.difficulty === diff)?.count || 0;
 
             return {
                 username,
                 solvedProblems: {
-                    easy: data.easySolved,
-                    medium: data.mediumSolved,
-                    hard: data.hardSolved,
-                    total: data.totalSolved,
+                    easy: getSolved('Easy'),
+                    medium: getSolved('Medium'),
+                    hard: getSolved('Hard'),
+                    total: getSolved('All'),
                 },
                 totalProblems: {
-                    easy: data.totalEasy,
-                    medium: data.totalMedium,
-                    hard: data.totalHard,
-                    total: data.totalQuestions,
+                    easy: getTotal('Easy'),
+                    medium: getTotal('Medium'),
+                    hard: getTotal('Hard'),
+                    total: getTotal('All'),
                 },
-                rank: data.ranking,
-                recentSubmissions: [], // This API doesn't provide recent submissions in detail
+                rank: data.matchedUser.profile.ranking,
+                recentSubmissions: [],
             };
         } catch (error) {
-            console.error('Error fetching LeetCode stats:', error);
+            console.error('Error fetching LeetCode stats via GraphQL:', error);
             return null;
         }
     }

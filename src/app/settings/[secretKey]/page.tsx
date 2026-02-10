@@ -29,9 +29,12 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                 const userData = await res.json();
                 setUser(userData);
 
-                // 2. Fetch LeetCode stats
-                const leetStats = await LeetCodeService.getUserStats(userData.leetcode_username);
-                setStats(leetStats);
+                // 2. Fetch LeetCode stats via proxy
+                const statsRes = await fetch(`/api/leetcode/stats?username=${userData.leetcode_username}`);
+                if (statsRes.ok) {
+                    const leetStats = await statsRes.json();
+                    setStats(leetStats);
+                }
 
                 // 3. Fetch all possible topics
                 const topics = await LeetCodeService.getTopics();
