@@ -11,6 +11,7 @@ export interface UserProfile {
     timezone?: string;
     difficulties?: string[];
     created_at: string;
+    study_plan_slug?: string | null;
 }
 
 export interface LeetCodeStats {

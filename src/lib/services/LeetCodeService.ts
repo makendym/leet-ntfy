@@ -170,4 +170,47 @@ export class LeetCodeService {
             return false;
         }
     }
+
+    static async getStudyPlanQuestions(planSlug: string) {
+        const query = `
+          query studyPlanV2Detail($slug: String!) {
+            studyPlanV2Detail(planSlug: $slug) {
+              planSubGroups {
+                questions {
+                  title
+                  titleSlug
+                  difficulty
+                }
+              }
+            }
+          }
+        `;
+
+        const variables = { slug: planSlug };
+
+        try {
+            const response = await fetch(this.GRAPHQL_BASE, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query, variables }),
+            });
+
+            const data = await response.json();
+            const subGroups = data?.data?.studyPlanV2Detail?.planSubGroups || [];
+
+            // Flatten all questions from all sub-groups
+            const questions = subGroups.flatMap((group: any) => group.questions || []);
+
+            return questions.map((q: any) => ({
+                title: q.title,
+                url: `https://leetcode.com/problems/${q.titleSlug}/`,
+                difficulty: q.difficulty
+            }));
+        } catch (error) {
+            console.error('Error fetching study plan questions:', error);
+            return [];
+        }
+    }
 }

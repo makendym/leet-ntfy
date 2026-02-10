@@ -108,6 +108,25 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
         }
     };
 
+    const toggleStudyPlan = async (planSlug: string | null) => {
+        if (!user) return;
+
+        setUser({ ...user, study_plan_slug: planSlug });
+
+        setIsSaving(true);
+        try {
+            await fetch(`/api/user/settings`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ secretKey, study_plan_slug: planSlug }),
+            });
+        } catch (err) {
+            console.error('Failed to save study plan:', err);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const testNotification = async () => {
         if (!user) return;
         setNudgeStatus('loading');
@@ -290,6 +309,39 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                     {/* Main Content: Topics */}
                     <div className="lg:col-span-2 space-y-6">
                         <section className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
+                            <h2 className="text-lg font-semibold flex items-center gap-2">
+                                <Zap className="w-5 h-5 text-[#ffa116]" />
+                                Study Path
+                            </h2>
+                            <p className="text-sm text-gray-400">Choose between a curated sequential path or random topics.</p>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                {[
+                                    { name: 'Random Mix', slug: null, desc: 'Random topics' },
+                                    { name: 'LeetCode 75', slug: 'leetcode-75', desc: 'Starter essentials' },
+                                    { name: 'Interview 150', slug: 'top-interview-150', desc: 'Top companies' }
+                                ].map(plan => (
+                                    <button
+                                        key={plan.name}
+                                        onClick={() => toggleStudyPlan(plan.slug)}
+                                        className={`p-4 rounded-xl border text-left transition-all ${user?.study_plan_slug === plan.slug
+                                            ? 'bg-orange-500/10 border-[#ffa116] ring-1 ring-[#ffa116]'
+                                            : 'bg-white/5 border-white/10 hover:border-white/30'
+                                            }`}
+                                    >
+                                        <div className="flex justify-between items-start mb-1">
+                                            <span className={`text-sm font-bold ${user?.study_plan_slug === plan.slug ? 'text-[#ffa116]' : 'text-gray-300'}`}>
+                                                {plan.name}
+                                            </span>
+                                            {user?.study_plan_slug === plan.slug && <Check className="w-4 h-4 text-[#ffa116]" />}
+                                        </div>
+                                        <p className="text-xs text-gray-500">{plan.desc}</p>
+                                    </button>
+                                ))}
+                            </div>
+                        </section>
+
+                        <section className={`bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4 transition-opacity ${user?.study_plan_slug ? 'opacity-40 pointer-events-none' : ''}`}>
                             <div className="flex justify-between items-center">
                                 <h2 className="text-lg font-semibold flex items-center gap-2">
                                     <BookOpen className="w-5 h-5 text-[#ffa116]" />
@@ -316,7 +368,7 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                             </div>
                         </section>
 
-                        <section className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
+                        <section className={`bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4 transition-opacity ${user?.study_plan_slug ? 'opacity-40 pointer-events-none' : ''}`}>
                             <h2 className="text-lg font-semibold flex items-center gap-2">
                                 <Zap className="w-5 h-5 text-[#ffa116]" />
                                 Challenge Level

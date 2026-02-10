@@ -74,8 +74,26 @@ export class StudyService {
         }
 
         if (shouldUpdateUser) {
-            const randomTopic = topics[Math.floor(Math.random() * topics.length)];
-            question = await LeetCodeService.getRandomQuestion(randomTopic, user.difficulties);
+            if (user.study_plan_slug) {
+                const planQuestions = await LeetCodeService.getStudyPlanQuestions(user.study_plan_slug);
+                if (planQuestions.length > 0) {
+                    // Find the first unsolved question in the plan
+                    for (const q of planQuestions) {
+                        const slug = q.url.split('/problems/')[1]?.replace(/\/$/, '');
+                        const isSolved = await LeetCodeService.isQuestionSolved(user.leetcode_username, slug);
+                        if (!isSolved) {
+                            question = q;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Fallback to random if no plan, empty plan, or all plan questions solved
+            if (!question) {
+                const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+                question = await LeetCodeService.getRandomQuestion(randomTopic, user.difficulties);
+            }
 
             // Track this as the new current question
             const slug = question.url.split('/problems/')[1]?.replace(/\/$/, '');
