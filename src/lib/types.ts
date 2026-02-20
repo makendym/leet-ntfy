@@ -12,6 +12,7 @@ export interface UserProfile {
     difficulties?: string[];
     created_at: string;
     study_plan_slug?: string | null;
+    solved_slugs?: string[];
 }
 
 export interface LeetCodeStats {

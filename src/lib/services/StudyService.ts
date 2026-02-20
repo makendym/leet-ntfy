@@ -39,7 +39,8 @@ export class StudyService {
         if (!shouldUpdateUser && user.current_question_slug) {
             const isSolved = await LeetCodeService.isQuestionSolved(
                 user.leetcode_username,
-                user.current_question_slug
+                user.current_question_slug,
+                user.solved_slugs
             );
 
             if (!isSolved) {
@@ -60,10 +61,16 @@ export class StudyService {
                     image: `https://images.unsplash.com/photo-1550305080-4e0455ca7bc4?q=80&w=1000&auto=format&fit=crop`, // Trophy/Celebration image
                 });
 
-                // 2. Clear the current question so we don't notify success twice
+                // 2. Clear current question and persist the solve to local history
                 updates.current_question_slug = null;
                 updates.current_question_title = null;
                 updates.last_notified_at = now.toISOString();
+
+                // Append to solved_slugs if not already there
+                const solvedSlugs = user.solved_slugs || [];
+                if (!solvedSlugs.includes(user.current_question_slug)) {
+                    updates.solved_slugs = [...solvedSlugs, user.current_question_slug];
+                }
                 await supabase.from('users').update(updates).eq('id', user.id);
 
                 return { success: true, status: 'celebrated', username: user.leetcode_username };
@@ -80,7 +87,7 @@ export class StudyService {
                     // Find the first unsolved question in the plan
                     for (const q of planQuestions) {
                         const slug = q.url.split('/problems/')[1]?.split(/[/?#]/)[0];
-                        const isSolved = await LeetCodeService.isQuestionSolved(user.leetcode_username, slug);
+                        const isSolved = await LeetCodeService.isQuestionSolved(user.leetcode_username, slug, user.solved_slugs);
                         if (!isSolved) {
                             question = q;
                             break;

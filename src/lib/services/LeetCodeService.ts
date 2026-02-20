@@ -168,7 +168,12 @@ export class LeetCodeService {
         };
     }
 
-    static async isQuestionSolved(username: string, questionSlug: string): Promise<boolean> {
+    static async isQuestionSolved(username: string, questionSlug: string, localSolvedSlugs?: string[]): Promise<boolean> {
+        // First check local history
+        if (localSolvedSlugs && localSolvedSlugs.includes(questionSlug)) {
+            return true;
+        }
+
         const query = `
           query recentSubmissionList($username: String!, $limit: Int) {
             recentSubmissionList(username: $username, limit: $limit) {
@@ -201,6 +206,40 @@ export class LeetCodeService {
         } catch (error) {
             console.error('Error checking question status:', error);
             return false;
+        }
+    }
+    static async getStudyPlanDetails(planSlug: string) {
+        const query = `
+          query studyPlanV2Detail($slug: String!) {
+            studyPlanV2Detail(planSlug: $slug) {
+              name
+              planSubGroups {
+                name
+                slug
+                questions {
+                  title
+                  titleSlug
+                  difficulty
+                }
+              }
+            }
+          }
+        `;
+
+        const variables = { slug: planSlug };
+
+        try {
+            const response = await fetch(this.GRAPHQL_BASE, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, variables }),
+            });
+
+            const data = await response.json();
+            return data?.data?.studyPlanV2Detail || null;
+        } catch (error) {
+            console.error('Error fetching study plan details:', error);
+            return null;
         }
     }
 
