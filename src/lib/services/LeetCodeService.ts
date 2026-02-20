@@ -180,7 +180,7 @@ export class LeetCodeService {
 
         const variables = {
             username,
-            limit: 20
+            limit: 100
         };
 
         try {

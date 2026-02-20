@@ -79,7 +79,7 @@ export class StudyService {
                 if (planQuestions.length > 0) {
                     // Find the first unsolved question in the plan
                     for (const q of planQuestions) {
-                        const slug = q.url.split('/problems/')[1]?.replace(/\/$/, '');
+                        const slug = q.url.split('/problems/')[1]?.split(/[/?#]/)[0];
                         const isSolved = await LeetCodeService.isQuestionSolved(user.leetcode_username, slug);
                         if (!isSolved) {
                             question = q;
@@ -96,7 +96,7 @@ export class StudyService {
             }
 
             // Track this as the new current question
-            const slug = question.url.split('/problems/')[1]?.replace(/\/$/, '');
+            const slug = question.url.split('/problems/')[1]?.split(/[/?#]/)[0];
             updates.current_question_slug = slug;
             updates.current_question_title = question.title;
         }
