@@ -122,7 +122,7 @@ export class StudyService {
         const selected = pick(templates);
         let title = selected.title;
         let message = selected.message;
-        let priority: 1 | 2 | 3 | 4 | 5 = (shouldUpdateUser || forceNewQuestion) ? 4 : 3;
+        const priority: 1 | 2 | 3 | 4 | 5 = (shouldUpdateUser || forceNewQuestion) ? 4 : 3;
 
         // If it's a forced reset, use a more distinct title
         if (forceNewQuestion) {
@@ -140,6 +140,13 @@ export class StudyService {
             image: `https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=1000&auto=format&fit=crop`, // Generic code image
             actions: [
                 { label: 'Solve Now', url: question.url },
+                {
+                    label: 'Marked as Solved',
+                    url: `${process.env.NEXT_PUBLIC_APP_URL}/api/user/solve`,
+                    type: 'http',
+                    method: 'POST',
+                    body: JSON.stringify({ secretKey: user.secret_key })
+                },
                 { label: 'Try Another', url: `${process.env.NEXT_PUBLIC_APP_URL}/api/user/shuffle?key=${user.secret_key}` },
                 { label: 'Settings', url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/${user.secret_key}` }
             ]

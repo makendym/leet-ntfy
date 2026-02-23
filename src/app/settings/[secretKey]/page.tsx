@@ -2,9 +2,8 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, BookOpen, Settings, Check, Plus, Trash2, ExternalLink, RefreshCcw, Zap, ChevronDown, Copy, Smartphone, Monitor } from 'lucide-react';
+import { BookOpen, Settings, Check, Plus, ExternalLink, RefreshCcw, Zap, ChevronDown, Copy, Smartphone, Monitor } from 'lucide-react';
 import { LeetCodeService } from '@/lib/services/LeetCodeService';
-import { NotificationService } from '@/lib/services/NotificationService';
 import { UserProfile, LeetCodeStats } from '@/lib/types';
 
 export default function SettingsPage({ params }: { params: Promise<{ secretKey: string }> }) {
@@ -19,22 +18,15 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
     const [isHelpOpen, setIsHelpOpen] = useState(true);
     const [isCopied, setIsCopied] = useState(false);
     const [nudgeStatus, setNudgeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-    const [planDetails, setPlanDetails] = useState<any>(null);
-    const [isPlanLoading, setIsPlanLoading] = useState(false);
 
     useEffect(() => {
         async function init() {
-            // 1. Fetch user by secret key (via an API we'll create)
+            // 1. Fetch user by secret key
             try {
                 const res = await fetch(`/api/user/settings?secretKey=${secretKey}`);
                 if (!res.ok) throw new Error('Unauthorized');
                 const userData = await res.json();
                 setUser(userData);
-
-                // Initialize plan details if plan exists
-                if (userData.study_plan_slug) {
-                    fetchPlanDetails(userData.study_plan_slug);
-                }
 
                 // 2. Fetch LeetCode stats via proxy
                 const statsRes = await fetch(`/api/leetcode/stats?username=${userData.leetcode_username}`);
@@ -61,10 +53,7 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
 
         const isRemoving = user.topics.includes(topic);
 
-        // Prevent removing the last topic
-        if (isRemoving && user.topics.length <= 1) {
-            return;
-        }
+        if (isRemoving && user.topics.length <= 1) return;
 
         const newTopics = isRemoving
             ? user.topics.filter(t => t !== topic)
@@ -72,7 +61,6 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
 
         setUser({ ...user, topics: newTopics });
 
-        // Auto-save logic
         setIsSaving(true);
         try {
             await fetch(`/api/user/settings`, {
@@ -87,31 +75,13 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
         }
     };
 
-    const fetchPlanDetails = async (slug: string) => {
-        setIsPlanLoading(true);
-        try {
-            const res = await fetch(`/api/leetcode/study-plan?slug=${slug}`);
-            if (res.ok) {
-                const data = await res.json();
-                setPlanDetails(data);
-            }
-        } catch (err) {
-            console.error('Failed to fetch plan details:', err);
-        } finally {
-            setIsPlanLoading(false);
-        }
-    };
-
     const toggleDifficulty = async (difficulty: string) => {
         if (!user) return;
 
         const currentDiffs = user.difficulties || ['Easy', 'Medium'];
         const isRemoving = currentDiffs.includes(difficulty);
 
-        // Prevent removing the last difficulty
-        if (isRemoving && currentDiffs.length <= 1) {
-            return;
-        }
+        if (isRemoving && currentDiffs.length <= 1) return;
 
         const newDiffs = isRemoving
             ? currentDiffs.filter(d => d !== difficulty)
@@ -137,11 +107,6 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
         if (!user) return;
 
         setUser({ ...user, study_plan_slug: planSlug });
-        if (planSlug) {
-            fetchPlanDetails(planSlug);
-        } else {
-            setPlanDetails(null);
-        }
 
         setIsSaving(true);
         try {
@@ -157,48 +122,6 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
         }
     };
 
-    const skipSection = async (sectionSlug: string) => {
-        if (!user || !planDetails) return;
-        const group = planDetails.planSubGroups.find((g: any) => g.slug === sectionSlug);
-        if (!group) return;
-
-        const slugsToSkip = group.questions.map((q: any) => q.titleSlug);
-        const currentSolved = user.solved_slugs || [];
-        const newSolved = Array.from(new Set([...currentSolved, ...slugsToSkip]));
-
-        const isCurrentSkipped = slugsToSkip.includes(user.current_question_slug!);
-
-        setUser({
-            ...user,
-            solved_slugs: newSolved,
-            ...(isCurrentSkipped ? {
-                current_question_slug: null,
-                current_question_title: null
-            } : {})
-        });
-
-        setIsSaving(true);
-        try {
-            await fetch(`/api/user/settings`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    secretKey,
-                    solved_slugs: newSolved,
-                    ...(isCurrentSkipped ? {
-                        current_question_slug: null,
-                        current_question_title: null
-                    } : {})
-                }),
-            });
-            testNotification();
-        } catch (err) {
-            console.error('Failed to skip section:', err);
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
     const markAsSolved = async (slug: string) => {
         if (!user || !slug) return;
         const currentSolved = user.solved_slugs || [];
@@ -206,7 +129,6 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
 
         const newSolved = [...currentSolved, slug];
 
-        // Optimistic update
         const isCurrent = user.current_question_slug === slug;
         setUser({
             ...user,
@@ -227,7 +149,6 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                     current_question_title: isCurrent ? null : user.current_question_title
                 }),
             });
-            // Immediately trigger a new nudge to get the next question
             testNotification();
         } catch (err) {
             console.error('Failed to save solved slug:', err);
@@ -245,15 +166,12 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ secretKey })
             });
-            const data = await res.json();
 
             if (res.ok) {
                 setNudgeStatus('success');
-                // Refresh user data to show the new question status
                 const userRes = await fetch(`/api/user/settings?secretKey=${secretKey}`);
                 const userData = await userRes.json();
                 setUser(userData);
-
                 setTimeout(() => setNudgeStatus('idle'), 3000);
             } else {
                 setNudgeStatus('error');
@@ -406,7 +324,7 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                                         <h3 className="font-semibold text-orange-100">Solve to Stop</h3>
                                     </div>
                                     <p className="text-sm text-gray-400 leading-relaxed">
-                                        <span className="text-[#ffa116] font-medium">Important:</span> Make sure you are <span className="text-orange-400 underline">logged in</span> on LeetCode. Once you solve the problem, we'll automatically stop sending reminders!
+                                        <span className="text-[#ffa116] font-medium">Important:</span> Make sure you are <span className="text-orange-400 underline">logged in</span> on LeetCode. Once you solve the problem, we&apos;ll automatically stop sending reminders!
                                     </p>
                                 </div>
                             </div>
@@ -450,55 +368,6 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                                     <RefreshCcw className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
                                 </button>
                             </div>
-                        </div>
-                    </section>
-                )}
-
-                {/* Study Plan Progress */}
-                {user?.study_plan_slug && planDetails && (
-                    <section className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-6">
-                        <div className="flex justify-between items-center">
-                            <h2 className="text-lg font-semibold flex items-center gap-2">
-                                <BookOpen className="w-5 h-5 text-[#ffa116]" />
-                                Plan Progress: {planDetails.name}
-                            </h2>
-                            {isPlanLoading && <RefreshCcw className="w-4 h-4 animate-spin text-orange-500" />}
-                        </div>
-
-                        <div className="space-y-4">
-                            {planDetails.planSubGroups.map((group: any) => {
-                                const solvedInGroup = group.questions.filter((q: any) => user.solved_slugs?.includes(q.titleSlug));
-                                const isFullySolved = solvedInGroup.length === group.questions.length;
-
-                                return (
-                                    <div key={group.slug} className="p-4 bg-white/5 rounded-xl border border-white/10 group hover:border-white/20 transition-all">
-                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                            <div>
-                                                <h3 className={`font-medium ${isFullySolved ? 'text-green-500' : 'text-gray-200'}`}>
-                                                    {group.name}
-                                                </h3>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {solvedInGroup.length} / {group.questions.length} completed
-                                                </p>
-                                            </div>
-                                            {!isFullySolved && (
-                                                <button
-                                                    onClick={() => skipSection(group.slug)}
-                                                    className="text-xs px-3 py-1.5 bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-all opacity-0 group-hover:opacity-100"
-                                                >
-                                                    Skip Section
-                                                </button>
-                                            )}
-                                        </div>
-                                        <div className="w-full bg-white/5 h-1 rounded-full mt-4 overflow-hidden">
-                                            <div
-                                                className={`h-full transition-all duration-500 ${isFullySolved ? 'bg-green-500' : 'bg-orange-500'}`}
-                                                style={{ width: `${(solvedInGroup.length / group.questions.length) * 100}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                );
-                            })}
                         </div>
                     </section>
                 )}
@@ -547,7 +416,7 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                                 </h2>
                                 {isSaving && <span className="text-xs text-[#ffa116] animate-pulse">Saving settings...</span>}
                             </div>
-                            <p className="text-sm text-gray-400">Add topics you've recently studied to your random rotation.</p>
+                            <p className="text-sm text-gray-400">Add topics you&apos;ve recently studied to your random rotation.</p>
 
                             <div className="flex flex-wrap gap-2">
                                 {allTopics.map(topic => (
@@ -625,7 +494,7 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                                 </div>
 
                                 <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-xl text-sm text-orange-200/80">
-                                    <p><strong>Success Nudges:</strong> You will receive a fresh challenge at 8 AM, then encouraging reminders every 3 hours until it's crossed off your list!</p>
+                                    <p><strong>Success Nudges:</strong> You will receive a fresh challenge at 8 AM, then encouraging reminders every 3 hours until it&apos;s crossed off your list!</p>
                                 </div>
                             </div>
                         </section>

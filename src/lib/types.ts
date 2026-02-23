@@ -46,7 +46,10 @@ export interface NotificationPayload {
     image?: string;
     icon?: string;
     actions?: Array<{
+        type?: 'view' | 'http' | 'broadcast';
         label: string;
         url: string;
+        method?: 'GET' | 'POST' | 'PUT';
+        body?: string;
     }>;
 }
