@@ -42,6 +42,7 @@ export interface NotificationPayload {
     title: string;
     message: string;
     topic: string;
+    clickUrl?: string;
     tags?: string[];
     priority?: 1 | 2 | 3 | 4 | 5;
     image?: string;

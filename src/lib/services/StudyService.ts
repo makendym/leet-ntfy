@@ -142,11 +142,11 @@ export class StudyService {
             title,
             message,
             topic: user.secret_key,
+            clickUrl: question.url,
             priority,
             icon: `${process.env.NEXT_PUBLIC_APP_URL}/icon.png`,
             image: `https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=1000&auto=format&fit=crop`, // Generic code image
             actions: [
-                { label: 'Solve Now', url: question.url },
                 {
                     label: 'Marked as Solved',
                     url: `${process.env.NEXT_PUBLIC_APP_URL}/api/user/solve`,
@@ -154,7 +154,8 @@ export class StudyService {
                     method: 'POST',
                     body: JSON.stringify({ secretKey: user.secret_key })
                 },
-                { label: 'Try Another', url: `${process.env.NEXT_PUBLIC_APP_URL}/api/user/shuffle?key=${user.secret_key}` }
+                { label: 'Try Another', url: `${process.env.NEXT_PUBLIC_APP_URL}/api/user/shuffle?key=${user.secret_key}` },
+                { label: 'Settings', url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/${user.secret_key}` }
             ]
         });
 

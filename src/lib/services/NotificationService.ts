@@ -28,8 +28,14 @@ export class NotificationService {
                 headers['Icon'] = payload.icon;
             }
 
+            if (payload.clickUrl) {
+                headers['Click'] = payload.clickUrl;
+            }
+
             if (payload.actions && payload.actions.length > 0) {
-                headers['Click'] = payload.actions[0].url;
+                if (!headers['Click']) {
+                    headers['Click'] = payload.actions[0].url; // Fallback
+                }
                 headers['Actions'] = payload.actions.map(a => {
                     const type = a.type || 'view';
                     const label = sanitize(a.label).replace(/"/g, ''); // Remove quotes to avoid nesting
