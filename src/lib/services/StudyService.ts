@@ -23,6 +23,13 @@ export class StudyService {
             // Don't send anything before 8 AM in user's timezone
             if (currentHour < 8) return { success: false, reason: `Too early (${currentHour}h in ${userTimezone})` };
 
+            // Schedule check (Day of week)
+            const userDay = new Date(now.toLocaleString('en-US', { timeZone: userTimezone })).getDay();
+            const allowedDays = user.schedule_days || [0, 1, 2, 3, 4, 5, 6];
+            if (!allowedDays.includes(userDay)) {
+                return { success: false, reason: `Not a scheduled day (Day ${userDay} in ${userTimezone})` };
+            }
+
             // 2-hour gap safety check
             if (user.last_notified_at) {
                 const lastNotified = new Date(user.last_notified_at).getTime();

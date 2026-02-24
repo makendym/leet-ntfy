@@ -36,7 +36,8 @@ export class UserRepository {
                     notification_frequency: 'daily',
                     topics: ['Array'],
                     timezone: timezone,
-                    difficulties: ['Easy', 'Medium']
+                    difficulties: ['Easy', 'Medium'],
+                    schedule_days: [0, 1, 2, 3, 4, 5, 6]
                 }
             ])
             .select()

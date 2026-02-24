@@ -103,6 +103,34 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
         }
     };
 
+    const toggleDay = async (dayIndex: number) => {
+        if (!user) return;
+
+        const currentDays = user.schedule_days || [0, 1, 2, 3, 4, 5, 6];
+        const isRemoving = currentDays.includes(dayIndex);
+
+        if (isRemoving && currentDays.length <= 1) return;
+
+        const newDays = isRemoving
+            ? currentDays.filter(d => d !== dayIndex)
+            : [...currentDays, dayIndex].sort();
+
+        setUser({ ...user, schedule_days: newDays });
+
+        setIsSaving(true);
+        try {
+            await fetch(`/api/user/settings`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ secretKey, schedule_days: newDays }),
+            });
+        } catch (err) {
+            console.error('Failed to save schedule:', err);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const toggleStudyPlan = async (planSlug: string | null) => {
         if (!user) return;
 
@@ -483,14 +511,25 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                                     </a>
                                 </div>
 
-                                <div className="p-4 bg-white/5 rounded-xl border border-white/10 opacity-60">
-                                    <div className="flex justify-between items-center mb-2">
+                                <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                                    <div className="flex justify-between items-center">
                                         <p className="font-medium text-gray-200">Schedule</p>
-                                        <span className="text-[10px] font-bold uppercase tracking-widest bg-orange-600/20 text-[#ffa116] px-2 py-0.5 rounded-full border border-[#ffa116]/30">
-                                            Coming Soon
-                                        </span>
+                                        <div className="flex gap-1">
+                                            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                                                <button
+                                                    key={i}
+                                                    onClick={() => toggleDay(i)}
+                                                    className={`w-7 h-7 rounded-lg text-[10px] font-bold transition-all border ${user?.schedule_days?.includes(i) || (!user?.schedule_days && true)
+                                                        ? 'bg-orange-500/20 border-[#ffa116] text-[#ffa116]'
+                                                        : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/30'
+                                                        }`}
+                                                >
+                                                    {day}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                    <p className="text-sm text-gray-500">Enable specific days (M T W T F S S) or custom frequencies.</p>
+                                    <p className="text-xs text-gray-500">Pick the days you want to receive study nudges.</p>
                                 </div>
 
                                 <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-xl text-sm text-orange-200/80">

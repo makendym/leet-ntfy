@@ -13,6 +13,7 @@ export interface UserProfile {
     created_at: string;
     study_plan_slug?: string | null;
     solved_slugs?: string[];
+    schedule_days?: number[];
 }
 
 export interface LeetCodeStats {
