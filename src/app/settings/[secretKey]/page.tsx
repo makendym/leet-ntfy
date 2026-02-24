@@ -494,49 +494,6 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                             </div>
                         </section>
 
-                        <section className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
-                            <h2 className="text-lg font-semibold">Notifications</h2>
-                            <div className="space-y-4">
-                                <div className="p-4 bg-white/5 rounded-xl border border-white/10 flex items-center justify-between">
-                                    <div>
-                                        <p className="font-medium text-gray-200">Direct Topic View</p>
-                                        <p className="text-xs text-gray-500">View your incoming alerts on the web.</p>
-                                    </div>
-                                    <a
-                                        href={`https://ntfy.sh/${user?.secret_key}`}
-                                        target="_blank"
-                                        className="p-2 hover:bg-orange-500/20 text-[#ffa116] rounded-lg transition-colors border border-transparent hover:border-orange-500/30"
-                                    >
-                                        <ExternalLink className="w-4 h-4" />
-                                    </a>
-                                </div>
-
-                                <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                                    <div className="flex justify-between items-center">
-                                        <p className="font-medium text-gray-200">Schedule</p>
-                                        <div className="flex gap-1">
-                                            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                                                <button
-                                                    key={i}
-                                                    onClick={() => toggleDay(i)}
-                                                    className={`w-7 h-7 rounded-lg text-[10px] font-bold transition-all border ${user?.schedule_days?.includes(i) || (!user?.schedule_days && true)
-                                                        ? 'bg-orange-500/20 border-[#ffa116] text-[#ffa116]'
-                                                        : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/30'
-                                                        }`}
-                                                >
-                                                    {day}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <p className="text-xs text-gray-500">Pick the days you want to receive study nudges.</p>
-                                </div>
-
-                                <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-xl text-sm text-orange-200/80">
-                                    <p><strong>Success Nudges:</strong> You will receive a fresh challenge at 8 AM, then encouraging reminders every 3 hours until it&apos;s crossed off your list!</p>
-                                </div>
-                            </div>
-                        </section>
                     </div>
 
                     {/* Sidebar: Stats */}
@@ -603,6 +560,50 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                         >
                             Sign Out
                         </button>
+
+                        <section className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
+                            <h2 className="text-lg font-semibold text-gray-200">Notification Alerts</h2>
+                            <div className="space-y-4">
+                                <div className="p-4 bg-white/5 rounded-xl border border-white/10 flex items-center justify-between">
+                                    <div>
+                                        <p className="font-medium text-gray-200">Direct Topic View</p>
+                                        <p className="text-xs text-gray-500">View your alerts on web.</p>
+                                    </div>
+                                    <a
+                                        href={`https://ntfy.sh/${user?.secret_key}`}
+                                        target="_blank"
+                                        className="p-2 hover:bg-orange-500/20 text-[#ffa116] rounded-lg transition-colors border border-transparent hover:border-orange-500/30"
+                                    >
+                                        <ExternalLink className="w-4 h-4" />
+                                    </a>
+                                </div>
+
+                                <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <p className="font-medium text-gray-200">Schedule</p>
+                                        <div className="flex gap-1">
+                                            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                                                <button
+                                                    key={i}
+                                                    onClick={() => toggleDay(i)}
+                                                    className={`w-6 h-6 rounded-md text-[10px] font-bold transition-all border ${user?.schedule_days?.includes(i) || (!user?.schedule_days && true)
+                                                        ? 'bg-orange-500/20 border-[#ffa116] text-[#ffa116]'
+                                                        : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/30'
+                                                        }`}
+                                                >
+                                                    {day}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <p className="text-[10px] text-gray-500 leading-tight">Pick the days you want to receive study nudges.</p>
+                                </div>
+
+                                <div className="bg-orange-500/10 border border-orange-500/20 p-3 rounded-xl text-xs text-orange-200/80 leading-relaxed">
+                                    <p><strong>Success Nudges:</strong> Fresh challenge at 8 AM, then reminders every 3 hours until solved!</p>
+                                </div>
+                            </div>
+                        </section>
                     </div>
                 </div>
 
