@@ -154,8 +154,7 @@ export class StudyService {
                     method: 'POST',
                     body: JSON.stringify({ secretKey: user.secret_key })
                 },
-                { label: 'Try Another', url: `${process.env.NEXT_PUBLIC_APP_URL}/api/user/shuffle?key=${user.secret_key}` },
-                { label: 'Settings', url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/${user.secret_key}` }
+                { label: 'Try Another', url: `${process.env.NEXT_PUBLIC_APP_URL}/api/user/shuffle?key=${user.secret_key}` }
             ]
         });
 
@@ -168,6 +167,11 @@ export class StudyService {
             await supabase.from('users').update(updates).eq('id', user.id);
         }
 
-        return { success, username: user.leetcode_username, isNewQuestion: shouldUpdateUser };
+        return {
+            success,
+            username: user.leetcode_username,
+            isNewQuestion: shouldUpdateUser,
+            reason: success ? undefined : 'Notification Service failed'
+        };
     }
 }

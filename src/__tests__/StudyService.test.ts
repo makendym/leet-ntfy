@@ -110,4 +110,21 @@ describe('StudyService Logic', () => {
 
         vi.useRealTimers();
     });
+
+    it('should allow manual nudges even during cooldown', async () => {
+        const now = new Date();
+        const recentTime = new Date(now.getTime() - (30 * 60 * 1000)).toISOString(); // 30 mins ago
+        const userInCooldown = { ...mockUser, last_notified_at: recentTime };
+
+        (LeetCodeService.getRandomQuestion as any).mockResolvedValue({
+            title: 'Two Sum',
+            url: 'https://leetcode.com/problems/two-sum/',
+            difficulty: 'Easy'
+        });
+
+        const result = await StudyService.sendStudyNudge(userInCooldown, true);
+
+        expect(result.success).toBe(true);
+        expect(NotificationService.sendNotification).toHaveBeenCalled();
+    });
 });

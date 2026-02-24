@@ -29,15 +29,16 @@ export class NotificationService {
             }
 
             if (payload.actions && payload.actions.length > 0) {
-                headers['Click'] = payload.actions[0].url; // Default click
+                headers['Click'] = payload.actions[0].url;
                 headers['Actions'] = payload.actions.map(a => {
                     const type = a.type || 'view';
-                    const parts = [type, sanitize(a.label), a.url];
+                    const label = sanitize(a.label).replace(/"/g, ''); // Remove quotes to avoid nesting
+                    const parts = [type, `"${label}"`, a.url];
                     if (type === 'http') {
                         if (a.method) parts.push(`method=${a.method}`);
                         if (a.body) parts.push(`body=${a.body}`);
                     }
-                    return parts.join(', ');
+                    return parts.join(',');
                 }).join('; ');
             }
 
