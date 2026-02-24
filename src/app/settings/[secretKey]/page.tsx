@@ -578,15 +578,15 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                                     </a>
                                 </div>
 
-                                <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                                    <div className="flex justify-between items-center mb-3">
-                                        <p className="font-medium text-gray-200">Schedule</p>
-                                        <div className="flex gap-1">
+                                <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-3">
+                                    <div className="space-y-3">
+                                        <p className="text-sm font-medium text-gray-200">Weekly Schedule</p>
+                                        <div className="flex flex-wrap gap-2">
                                             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
                                                 <button
                                                     key={i}
                                                     onClick={() => toggleDay(i)}
-                                                    className={`w-6 h-6 rounded-md text-[10px] font-bold transition-all border ${user?.schedule_days?.includes(i) || (!user?.schedule_days && true)
+                                                    className={`w-8 h-8 rounded-lg text-xs font-bold transition-all border ${user?.schedule_days?.includes(i) || (!user?.schedule_days && true)
                                                         ? 'bg-orange-500/20 border-[#ffa116] text-[#ffa116]'
                                                         : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/30'
                                                         }`}
@@ -596,7 +596,7 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                                             ))}
                                         </div>
                                     </div>
-                                    <p className="text-[10px] text-gray-500 leading-tight">Pick the days you want to receive study nudges.</p>
+                                    <p className="text-[10px] text-gray-500 leading-tight">Select which days you&apos;ll receive study nudges.</p>
                                 </div>
 
                                 <div className="bg-orange-500/10 border border-orange-500/20 p-3 rounded-xl text-xs text-orange-200/80 leading-relaxed">
