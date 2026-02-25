@@ -11,6 +11,17 @@ export class StudyService {
         const now = new Date();
         const userTimezone = user.timezone || 'America/New_York';
 
+        // --- LAZY RESET LOGIC ---
+        // If the user's last solve was on a different day, reset solved_today
+        const todayStr = new Date(now.toLocaleString('en-US', { timeZone: userTimezone })).toDateString();
+        const lastSolveStr = user.last_solve_at ? new Date(new Date(user.last_solve_at).toLocaleString('en-US', { timeZone: userTimezone })).toDateString() : '';
+
+        let solvedToday = user.solved_today || 0;
+        if (lastSolveStr && lastSolveStr !== todayStr) {
+            solvedToday = 0;
+            // We'll update this in the database later if we send a nudge or if someone calls solve
+        }
+
         // Use Intl to get the hour in the user's timezone
         const currentHour = parseInt(new Intl.DateTimeFormat('en-US', {
             hour: 'numeric',
@@ -20,21 +31,28 @@ export class StudyService {
 
         // Safety checks (skipped for manual triggers and forced resets)
         if (!isManual && !forceNewQuestion) {
-            // Don't send anything before 8 AM in user's timezone
+            // 1. Goal Check: If already hit the daily goal, stop nudging
+            const goal = user.daily_goal || 1;
+            if (solvedToday >= goal) {
+                return { success: false, reason: `Daily goal met (${solvedToday}/${goal})` };
+            }
+
+            // 2. Time Check: Don't send anything before 8 AM in user's timezone
             if (currentHour < 8) return { success: false, reason: `Too early (${currentHour}h in ${userTimezone})` };
 
-            // Schedule check (Day of week)
+            // 3. Schedule check (Day of week)
             const userDay = new Date(now.toLocaleString('en-US', { timeZone: userTimezone })).getDay();
             const allowedDays = user.schedule_days || [0, 1, 2, 3, 4, 5, 6];
             if (!allowedDays.includes(userDay)) {
                 return { success: false, reason: `Not a scheduled day (Day ${userDay} in ${userTimezone})` };
             }
 
-            // 2-hour gap safety check
+            // 4. Cooldown safety check (using nudge_interval)
             if (user.last_notified_at) {
                 const lastNotified = new Date(user.last_notified_at).getTime();
                 const diffMinutes = (now.getTime() - lastNotified) / (1000 * 60);
-                if (diffMinutes < 180) return { success: false, reason: 'Cooldown active (3 hours)' };
+                const interval = user.nudge_interval || 180;
+                if (diffMinutes < interval) return { success: false, reason: `Cooldown active (${interval} minutes)` };
             }
         }
 
@@ -108,14 +126,16 @@ export class StudyService {
                 const randomTopic = topics[Math.floor(Math.random() * topics.length)];
                 question = await LeetCodeService.getRandomQuestion(randomTopic, user.difficulties);
             }
+        }
 
+        if (!question) return { success: false, reason: 'Question fetch failed' };
+
+        if (shouldUpdateUser) {
             // Track this as the new current question
             const slug = question.url.split('/problems/')[1]?.split(/[/?#]/)[0];
             updates.current_question_slug = slug;
             updates.current_question_title = question.title;
         }
-
-        if (!question) return { success: false, reason: 'Question fetch failed' };
 
         // Messaging Logic
         const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
@@ -165,6 +185,12 @@ export class StudyService {
             if (forceNewQuestion) {
                 updates.last_reset_at = now.toISOString().split('T')[0]; // Store only date
             }
+
+            // Persist the (potentially reset) solved_today count
+            if (lastSolveStr !== todayStr) {
+                updates.solved_today = solvedToday;
+            }
+
             await supabase.from('users').update(updates).eq('id', user.id);
         }
 

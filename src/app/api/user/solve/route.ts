@@ -28,21 +28,39 @@ export async function POST(request: Request) {
 
         // 2. Mark as solved in database
         const solvedSlugs = user.solved_slugs || [];
+        const now = new Date();
+        const userTimezone = user.timezone || 'America/New_York';
+        const todayStr = new Date(now.toLocaleString('en-US', { timeZone: userTimezone })).toDateString();
+        const lastSolveStr = user.last_solve_at ? new Date(new Date(user.last_solve_at).toLocaleString('en-US', { timeZone: userTimezone })).toDateString() : '';
+
+        // Reset if it's a new day
+        let solvedToday = (lastSolveStr === todayStr) ? (user.solved_today || 0) : 0;
+        solvedToday += 1;
+
+        const updates: any = {
+            last_solve_at: now.toISOString(),
+            solved_today: solvedToday
+        };
+
         if (!solvedSlugs.includes(user.current_question_slug)) {
-            const updatedSolvedSlugs = [...solvedSlugs, user.current_question_slug];
-
-            await supabase.from('users').update({
-                solved_slugs: updatedSolvedSlugs
-            }).eq('id', user.id);
-
-            // Re-fetch or update the local user object for the nudge logic
-            user.solved_slugs = updatedSolvedSlugs;
+            updates.solved_slugs = [...solvedSlugs, user.current_question_slug];
         }
 
-        // 3. Trigger nudge celebration (it will see the question as solved now)
-        const result = await StudyService.sendStudyNudge(user as UserProfile, true);
+        await supabase.from('users').update(updates).eq('id', user.id);
 
-        return NextResponse.json({ status: 'success', details: result });
+        // 3. Trigger nudge calculation
+        // First, send the celebration for the current solve
+        const celebration = await StudyService.sendStudyNudge(user as UserProfile, true);
+
+        // If goal not met, send the next problem immediately
+        const goal = user.daily_goal || 1;
+        if (solvedToday < goal) {
+            // Need to re-fetch or merge updates for the next nudge
+            const updatedUser = { ...user, ...updates } as UserProfile;
+            await StudyService.sendStudyNudge(updatedUser, true, true);
+        }
+
+        return NextResponse.json({ status: 'success', details: celebration, solvedToday, goal });
     } catch (error) {
         console.error('Solve API failed:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

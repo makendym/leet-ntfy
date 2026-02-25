@@ -44,8 +44,61 @@ describe('StudyService Logic', () => {
         }) as any;
 
         NotificationService.sendNotification = vi.fn().mockResolvedValue(true) as any;
-        LeetCodeService.isQuestionSolved = vi.fn() as any;
-        LeetCodeService.getRandomQuestion = vi.fn() as any;
+        LeetCodeService.isQuestionSolved = vi.fn().mockResolvedValue(false) as any;
+        LeetCodeService.getRandomQuestion = vi.fn().mockResolvedValue({
+            title: 'Mock Question',
+            url: 'https://leetcode.com/problems/mock-question/'
+        }) as any;
+        LeetCodeService.getStudyPlanQuestions = vi.fn().mockResolvedValue([]) as any;
+    });
+
+    it('should allow manual nudges even during cooldown', async () => {
+        const user = { ...mockUser, last_notified_at: new Date().toISOString() };
+        const result = await StudyService.sendStudyNudge(user as any, true);
+        expect(result.success).toBe(true);
+    });
+
+    it('should respect the daily goal and stop auto-nudging', async () => {
+        const user = {
+            ...mockUser,
+            daily_goal: 1,
+            solved_today: 1,
+            last_solve_at: new Date().toISOString()
+        };
+        const result = await StudyService.sendStudyNudge(user as any, false);
+        expect(result.success).toBe(false);
+        expect(result.reason).toMatch(/Daily goal met/);
+    });
+
+    it('should use the custom nudge interval for cooldown', async () => {
+        const lastNotified = new Date(Date.now() - 45 * 60 * 1000).toISOString(); // 45 mins ago
+        const user = {
+            ...mockUser,
+            nudge_interval: 60,
+            last_notified_at: lastNotified
+        };
+
+        // Should fail if interval is 60 and only 45 passed
+        const result = await StudyService.sendStudyNudge(user as any, false);
+        expect(result.success).toBe(false);
+        expect(result.reason).toContain('Cooldown active (60 minutes)');
+
+        // Should pass if we make it 30 mins interval
+        const result2 = await StudyService.sendStudyNudge({ ...user, nudge_interval: 30 } as any, false);
+        expect(result2.success).toBe(true);
+    });
+
+    it('should reset solved_today on a new day (Lazy Reset)', async () => {
+        const yesterday = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
+        const user = {
+            ...mockUser,
+            solved_today: 5,
+            last_solve_at: yesterday
+        };
+
+        const result = await StudyService.sendStudyNudge(user as any, false);
+        expect(result.success).toBe(true);
+        // The service should have reset solved_today internally and allowed the nudge
     });
 
     it('should enforce the 180-minute (3h) cooldown gap', async () => {
@@ -57,7 +110,7 @@ describe('StudyService Logic', () => {
         const result = await StudyService.sendStudyNudge(userWithRecentNudge, false);
 
         expect(result.success).toBe(false);
-        expect(result.reason).toContain('Cooldown active (3 hours)');
+        expect(result.reason).toContain('Cooldown active (180 minutes)');
         expect(NotificationService.sendNotification).not.toHaveBeenCalled();
     });
 

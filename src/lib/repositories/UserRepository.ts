@@ -37,7 +37,10 @@ export class UserRepository {
                     topics: ['Array'],
                     timezone: timezone,
                     difficulties: ['Easy', 'Medium'],
-                    schedule_days: [0, 1, 2, 3, 4, 5, 6]
+                    schedule_days: [0, 1, 2, 3, 4, 5, 6],
+                    daily_goal: 1,
+                    nudge_interval: 180,
+                    solved_today: 0
                 }
             ])
             .select()

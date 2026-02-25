@@ -14,6 +14,10 @@ export interface UserProfile {
     study_plan_slug?: string | null;
     solved_slugs?: string[];
     schedule_days?: number[];
+    daily_goal?: number;
+    nudge_interval?: number;
+    solved_today?: number;
+    last_solve_at?: string;
 }
 
 export interface LeetCodeStats {

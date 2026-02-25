@@ -578,8 +578,63 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                                     </a>
                                 </div>
 
-                                <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-3">
+                                <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-4">
                                     <div className="space-y-3">
+                                        <p className="text-sm font-medium text-gray-200">Daily Solve Goal</p>
+                                        <div className="flex gap-2">
+                                            {[1, 2, 3, 5].map((goal) => (
+                                                <button
+                                                    key={goal}
+                                                    onClick={async () => {
+                                                        if (!user) return;
+                                                        setUser({ ...user, daily_goal: goal });
+                                                        setIsSaving(true);
+                                                        await fetch(`/api/user/settings`, {
+                                                            method: 'PATCH',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ secretKey, daily_goal: goal }),
+                                                        });
+                                                        setIsSaving(false);
+                                                    }}
+                                                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${user?.daily_goal === goal || (!user?.daily_goal && goal === 1)
+                                                        ? 'bg-orange-500/20 border-[#ffa116] text-[#ffa116]'
+                                                        : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/30'
+                                                        }`}
+                                                >
+                                                    {goal}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <p className="text-[10px] text-gray-500 leading-tight">Nudge automatically follows up until your goal is met.</p>
+                                    </div>
+
+                                    <div className="space-y-3 pt-2">
+                                        <p className="text-sm font-medium text-gray-200">Nudge Interval</p>
+                                        <select
+                                            value={user?.nudge_interval || 180}
+                                            onChange={async (e) => {
+                                                const val = parseInt(e.target.value);
+                                                if (!user) return;
+                                                setUser({ ...user, nudge_interval: val });
+                                                setIsSaving(true);
+                                                await fetch(`/api/user/settings`, {
+                                                    method: 'PATCH',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ secretKey, nudge_interval: val }),
+                                                });
+                                                setIsSaving(false);
+                                            }}
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-[#ffa116] focus:outline-none focus:border-[#ffa116]/50"
+                                        >
+                                            <option value={30}>Every 30 minutes (Aggressive)</option>
+                                            <option value={60}>Every 1 hour</option>
+                                            <option value={120}>Every 2 hours</option>
+                                            <option value={180}>Every 3 hours (Standard)</option>
+                                            <option value={360}>Every 6 hours (Chill)</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-3 pt-2">
                                         <p className="text-sm font-medium text-gray-200">Weekly Schedule</p>
                                         <div className="flex flex-wrap gap-2">
                                             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
@@ -600,7 +655,10 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                                 </div>
 
                                 <div className="bg-orange-500/10 border border-orange-500/20 p-3 rounded-xl text-xs text-orange-200/80 leading-relaxed">
-                                    <p><strong>Success Nudges:</strong> Fresh challenge at 8 AM, then reminders every 3 hours until solved!</p>
+                                    <p><strong>Work Ethic:</strong> Fresh challenge at 8 AM, then reminders {user?.nudge_interval ? `every ${user.nudge_interval / 60}h` : 'every 3h'} until solved!</p>
+                                    {user?.daily_goal && user.daily_goal > 1 && (
+                                        <p className="mt-1 font-bold">Goal enabled: {user.daily_goal} questions daily.</p>
+                                    )}
                                 </div>
                             </div>
                         </section>
