@@ -46,6 +46,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ### 4. Database Schema
 Initialize your Supabase database with the following table:
+
 ```sql
 CREATE TABLE users (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -53,12 +54,30 @@ CREATE TABLE users (
   secret_key uuid NOT NULL DEFAULT gen_random_uuid(),
   topics text[] DEFAULT '{}',
   notification_frequency text DEFAULT 'daily',
+  timezone text DEFAULT 'America/New_York',
+  difficulties text[] DEFAULT '{Easy, Medium}',
+  schedule_days integer[] DEFAULT '{0,1,2,3,4,5,6}',
+  daily_goal integer DEFAULT 1,
+  nudge_interval integer DEFAULT 180,
+  solved_today integer DEFAULT 0,
+  solved_slugs text[] DEFAULT '{}',
+  last_solve_at timestamptz,
   current_question_slug text,
   current_question_title text,
   last_notified_at timestamptz,
+  last_reset_at text,
+  study_plan_slug text,
+  plan_progress jsonb DEFAULT '{}',
   created_at timestamptz DEFAULT now()
 );
+
+-- Indexes for performance
+CREATE INDEX idx_users_secret_key ON users(secret_key);
+CREATE INDEX idx_users_leetcode_username ON users(leetcode_username);
 ```
+
+> [!TIP]
+> If you already have the table and just need to add new columns, see [scripts/migration_v2.sql](file:///Users/makendymidouin/Desktop/GitHub Projects/leet-ntfy/scripts/migration_v2.sql).
 
 ### 5. Automated Notifications (Optional)
 To automate notifications, set up a GitHub Action:

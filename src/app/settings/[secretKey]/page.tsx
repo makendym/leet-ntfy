@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Settings, Check, Plus, ExternalLink, RefreshCcw, Zap, ChevronDown, Copy, Smartphone, Monitor } from 'lucide-react';
+import { BookOpen, Settings, Check, Plus, ExternalLink, RefreshCcw, Zap, ChevronDown, Copy, Smartphone, Monitor, RotateCcw } from 'lucide-react';
 import { LeetCodeService } from '@/lib/services/LeetCodeService';
 import { UserProfile, LeetCodeStats } from '@/lib/types';
 
@@ -18,6 +18,8 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
     const [isHelpOpen, setIsHelpOpen] = useState(true);
     const [isCopied, setIsCopied] = useState(false);
     const [nudgeStatus, setNudgeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const [planCounts, setPlanCounts] = useState<Record<string, number>>({});
+    const [isResetting, setIsResetting] = useState(false);
 
     useEffect(() => {
         async function init() {
@@ -38,6 +40,19 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                 // 3. Fetch all possible topics
                 const topics = await LeetCodeService.getTopics();
                 setAllTopics(topics);
+
+                // 4. Fetch study plan counts via proxy
+                const plans = ['leetcode-75', 'top-interview-150'];
+                const counts: Record<string, number> = {};
+                for (const slug of plans) {
+                    const res = await fetch(`/api/leetcode/study-plan/questions?slug=${slug}`);
+                    if (res.ok) {
+                        const qs = await res.json();
+                        counts[slug] = qs.length;
+                    }
+                }
+                setPlanCounts(counts);
+
             } catch (err) {
                 console.error(err);
                 router.push('/');
@@ -150,19 +165,82 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
         }
     };
 
+    const resetPlan = async (slug: string) => {
+        if (!user || isResetting) return;
+
+        const confirmReset = window.confirm(`Are you sure you want to reset your progress for ${slug}? This will start the questions from the beginning.`);
+        if (!confirmReset) return;
+
+        setIsResetting(true);
+        const newProgress = { ...user.plan_progress };
+        delete newProgress[slug];
+
+        setUser({ ...user, plan_progress: newProgress });
+
+        try {
+            await fetch(`/api/user/settings`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ secretKey, plan_progress: newProgress }),
+            });
+            // Also trigger a nudge to get the new first question
+            testNotification();
+        } catch (err) {
+            console.error('Failed to reset plan:', err);
+        } finally {
+            setIsResetting(false);
+        }
+    };
+
     const markAsSolved = async (slug: string) => {
         if (!user || !slug) return;
         const currentSolved = user.solved_slugs || [];
         if (currentSolved.includes(slug)) return;
 
+        const now = new Date();
+        const solveItem = { slug, solved_at: now.toISOString() };
         const newSolved = [...currentSolved, slug];
+        const newHistory = [...(user.solve_history || []), solveItem];
 
         const isCurrent = user.current_question_slug === slug;
+        const updates: any = {
+            secretKey,
+            solved_slugs: newSolved,
+            solve_history: newHistory,
+            current_question_slug: isCurrent ? null : user.current_question_slug,
+            current_question_title: isCurrent ? null : user.current_question_title,
+            last_solve_at: now.toISOString()
+        };
+
+        let newPlanProgress = user.plan_progress;
+        if (user.study_plan_slug) {
+            const planProgress = user.plan_progress || {};
+            const currentPlanEntries = planProgress[user.study_plan_slug] || [];
+
+            const isAlreadyInPlan = currentPlanEntries.some((entry: any) =>
+                typeof entry === 'string' ? entry === slug : entry.slug === slug
+            );
+
+            if (!isAlreadyInPlan) {
+                newPlanProgress = {
+                    ...planProgress,
+                    [user.study_plan_slug]: [
+                        ...currentPlanEntries,
+                        solveItem
+                    ]
+                };
+                updates.plan_progress = newPlanProgress;
+            }
+        }
+
         setUser({
             ...user,
             solved_slugs: newSolved,
+            solve_history: newHistory,
             current_question_slug: isCurrent ? null : user.current_question_slug,
-            current_question_title: isCurrent ? null : user.current_question_title
+            current_question_title: isCurrent ? null : user.current_question_title,
+            plan_progress: newPlanProgress,
+            last_solve_at: now.toISOString()
         });
 
         setIsSaving(true);
@@ -170,12 +248,7 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
             await fetch(`/api/user/settings`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    secretKey,
-                    solved_slugs: newSolved,
-                    current_question_slug: isCurrent ? null : user.current_question_slug,
-                    current_question_title: isCurrent ? null : user.current_question_title
-                }),
+                body: JSON.stringify(updates),
             });
             testNotification();
         } catch (err) {
@@ -218,6 +291,17 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
         </div>
     );
 
+    // Derived Progress Logic
+    const userTimezone = user?.timezone || 'America/New_York';
+    const nowLocal = new Date();
+    const todayStr = new Date(nowLocal.toLocaleString('en-US', { timeZone: userTimezone })).toDateString();
+    const solvedTodayCount = user?.solve_history?.filter(item => {
+        if (!item.solved_at) return false;
+        const dateObj = new Date(item.solved_at);
+        const solveDayStr = new Date(dateObj.toLocaleString('en-US', { timeZone: userTimezone })).toDateString();
+        return solveDayStr === todayStr;
+    }).length || 0;
+
     return (
         <main className="min-h-screen bg-[#0a0a0a] text-white p-4 sm:p-8">
             <div className="max-w-4xl mx-auto space-y-8">
@@ -233,44 +317,63 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                             <p className="text-gray-500">Managing <span className="text-[#ffa116]">@{user?.leetcode_username}</span></p>
                         </div>
                     </div>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                        <button
-                            onClick={testNotification}
-                            disabled={nudgeStatus !== 'idle'}
-                            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm transition-all flex items-center justify-center gap-2 ${nudgeStatus === 'success'
-                                ? 'bg-green-600 text-white'
-                                : nudgeStatus === 'error'
-                                    ? 'bg-red-600 text-white'
-                                    : !user?.current_question_slug
-                                        ? 'bg-[#ffa116] text-black font-bold hover:bg-[#ffb342] shadow-lg shadow-orange-500/20'
-                                        : 'bg-white/5 hover:bg-white/10 border border-white/10'
-                                }`}
-                        >
-                            {nudgeStatus === 'loading' ? (
-                                <RefreshCcw className="w-4 h-4 animate-spin" />
-                            ) : nudgeStatus === 'success' ? (
-                                <>
-                                    <Check className="w-4 h-4" />
-                                    Sent!
-                                </>
-                            ) : nudgeStatus === 'error' ? (
-                                'Try Again'
-                            ) : !user?.current_question_slug ? (
-                                <>
-                                    <Zap className="w-4 h-4 fill-current" />
-                                    Send My First Challenge
-                                </>
-                            ) : (
-                                'Test Notification'
-                            )}
-                        </button>
-                        <a
-                            href={`https://ntfy.sh/${user?.secret_key}`}
-                            target="_blank"
-                            className="flex items-center gap-2 p-2 bg-orange-500/20 text-[#ffa116] rounded-lg hover:bg-orange-500/30 transition-colors border border-orange-500/20"
-                        >
-                            <ExternalLink className="w-4 h-4" />
-                        </a>
+
+                    <div className="flex items-center gap-6 w-full sm:w-auto">
+                        {user && (
+                            <div className="hidden md:flex flex-col items-end gap-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Daily Progress</span>
+                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${solvedTodayCount >= (user.daily_goal || 1) ? 'bg-green-500/20 text-green-500' : 'bg-orange-500/20 text-[#ffa116]'}`}>
+                                        {solvedTodayCount} / {user.daily_goal || 1}
+                                    </span>
+                                </div>
+                                <div className="w-32 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-gradient-to-r from-[#ffa116] to-orange-400 transition-all duration-1000"
+                                        style={{ width: `${Math.min(100, (solvedTodayCount / (user.daily_goal || 1)) * 100)}%` }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                        <div className="flex gap-2 w-full sm:w-auto">
+                            <button
+                                onClick={testNotification}
+                                disabled={nudgeStatus !== 'idle'}
+                                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm transition-all flex items-center justify-center gap-2 ${nudgeStatus === 'success'
+                                    ? 'bg-green-600 text-white'
+                                    : nudgeStatus === 'error'
+                                        ? 'bg-red-600 text-white'
+                                        : !user?.current_question_slug
+                                            ? 'bg-[#ffa116] text-black font-bold hover:bg-[#ffb342] shadow-lg shadow-orange-500/20'
+                                            : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                                    }`}
+                            >
+                                {nudgeStatus === 'loading' ? (
+                                    <RefreshCcw className="w-4 h-4 animate-spin" />
+                                ) : nudgeStatus === 'success' ? (
+                                    <>
+                                        <Check className="w-4 h-4" />
+                                        Sent!
+                                    </>
+                                ) : nudgeStatus === 'error' ? (
+                                    'Try Again'
+                                ) : !user?.current_question_slug ? (
+                                    <>
+                                        <Zap className="w-4 h-4 fill-current" />
+                                        Send My First Challenge
+                                    </>
+                                ) : (
+                                    'Test Notification'
+                                )}
+                            </button>
+                            <a
+                                href={`https://ntfy.sh/${user?.secret_key}`}
+                                target="_blank"
+                                className="flex items-center gap-2 p-2 bg-orange-500/20 text-[#ffa116] rounded-lg hover:bg-orange-500/30 transition-colors border border-orange-500/20"
+                            >
+                                <ExternalLink className="w-4 h-4" />
+                            </a>
+                        </div>
                     </div>
                 </div>
 
@@ -415,24 +518,59 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                                     { name: 'Random Mix', slug: null, desc: 'Random topics' },
                                     { name: 'LeetCode 75', slug: 'leetcode-75', desc: 'Starter essentials' },
                                     { name: 'Interview 150', slug: 'top-interview-150', desc: 'Top companies' }
-                                ].map(plan => (
-                                    <button
-                                        key={plan.name}
-                                        onClick={() => toggleStudyPlan(plan.slug)}
-                                        className={`p-4 rounded-xl border text-left transition-all ${user?.study_plan_slug === plan.slug
-                                            ? 'bg-orange-500/10 border-[#ffa116] ring-1 ring-[#ffa116]'
-                                            : 'bg-white/5 border-white/10 hover:border-white/30'
-                                            }`}
-                                    >
-                                        <div className="flex justify-between items-start mb-1">
-                                            <span className={`text-sm font-bold ${user?.study_plan_slug === plan.slug ? 'text-[#ffa116]' : 'text-gray-300'}`}>
-                                                {plan.name}
-                                            </span>
-                                            {user?.study_plan_slug === plan.slug && <Check className="w-4 h-4 text-[#ffa116]" />}
+                                ].map(plan => {
+                                    const solvedCount = plan.slug ? (user?.plan_progress?.[plan.slug]?.length || 0) : 0;
+                                    const totalCount = plan.slug ? (planCounts[plan.slug] || 0) : 0;
+                                    const progressPercent = totalCount > 0 ? (solvedCount / totalCount) * 100 : 0;
+
+                                    return (
+                                        <div key={plan.name} className="relative group">
+                                            <button
+                                                onClick={() => toggleStudyPlan(plan.slug)}
+                                                className={`w-full p-4 rounded-xl border text-left transition-all h-full ${user?.study_plan_slug === plan.slug
+                                                    ? 'bg-orange-500/10 border-[#ffa116] ring-1 ring-[#ffa116]'
+                                                    : 'bg-white/5 border-white/10 hover:border-white/30'
+                                                    }`}
+                                            >
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className={`text-sm font-bold ${user?.study_plan_slug === plan.slug ? 'text-[#ffa116]' : 'text-gray-300'}`}>
+                                                        {plan.name}
+                                                    </span>
+                                                    {user?.study_plan_slug === plan.slug && <Check className="w-4 h-4 text-[#ffa116]" />}
+                                                </div>
+                                                <p className="text-xs text-gray-500 mb-2">{plan.desc}</p>
+
+                                                {plan.slug && totalCount > 0 && (
+                                                    <div className="space-y-1 mt-auto">
+                                                        <div className="flex justify-between text-[10px] text-gray-500">
+                                                            <span>{solvedCount}/{totalCount} Solved</span>
+                                                            <span>{Math.round(progressPercent)}%</span>
+                                                        </div>
+                                                        <div className="w-full bg-white/5 rounded-full h-1 overflow-hidden">
+                                                            <div
+                                                                className="bg-[#ffa116] h-full rounded-full transition-all duration-1000"
+                                                                style={{ width: `${progressPercent}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </button>
+
+                                            {plan.slug && user?.study_plan_slug === plan.slug && solvedCount > 0 && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        resetPlan(plan.slug!);
+                                                    }}
+                                                    className="absolute -top-2 -right-2 p-1.5 bg-[#0a0a0a] border border-white/10 rounded-full text-gray-500 hover:text-red-500 hover:border-red-500/50 transition-all opacity-0 group-hover:opacity-100 shadow-xl"
+                                                    title="Reset Plan Progress"
+                                                >
+                                                    <RotateCcw className="w-3 h-3" />
+                                                </button>
+                                            )}
                                         </div>
-                                        <p className="text-xs text-gray-500">{plan.desc}</p>
-                                    </button>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </section>
 

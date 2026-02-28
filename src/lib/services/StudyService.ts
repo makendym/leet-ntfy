@@ -4,6 +4,20 @@ import { NotificationService } from './NotificationService';
 import { UserProfile } from '../types';
 
 export class StudyService {
+    static getDailySolvedCount(user: UserProfile): number {
+        if (!user.solve_history || user.solve_history.length === 0) return 0;
+
+        const userTimezone = user.timezone || 'America/New_York';
+        const now = new Date();
+        const todayStr = new Date(now.toLocaleString('en-US', { timeZone: userTimezone })).toDateString();
+
+        return user.solve_history.filter(item => {
+            if (!item.solved_at) return false;
+            const solveDayStr = new Date(new Date(item.solved_at).toLocaleString('en-US', { timeZone: userTimezone })).toDateString();
+            return solveDayStr === todayStr;
+        }).length;
+    }
+
     static async sendStudyNudge(user: UserProfile, isManual: boolean = false, forceNewQuestion: boolean = false) {
         // Fallback for empty topics
         const topics = (user.topics && user.topics.length > 0) ? user.topics : ['Array'];
@@ -11,16 +25,9 @@ export class StudyService {
         const now = new Date();
         const userTimezone = user.timezone || 'America/New_York';
 
-        // --- LAZY RESET LOGIC ---
-        // If the user's last solve was on a different day, reset solved_today
+        // --- DERIVED PROGRESS LOGIC ---
+        const solvedToday = this.getDailySolvedCount(user);
         const todayStr = new Date(now.toLocaleString('en-US', { timeZone: userTimezone })).toDateString();
-        const lastSolveStr = user.last_solve_at ? new Date(new Date(user.last_solve_at).toLocaleString('en-US', { timeZone: userTimezone })).toDateString() : '';
-
-        let solvedToday = user.solved_today || 0;
-        if (lastSolveStr && lastSolveStr !== todayStr) {
-            solvedToday = 0;
-            // We'll update this in the database later if we send a nudge or if someone calls solve
-        }
 
         // Use Intl to get the hour in the user's timezone
         const currentHour = parseInt(new Intl.DateTimeFormat('en-US', {
@@ -62,13 +69,13 @@ export class StudyService {
 
         // Check if user has an active question (skip if forcing new one)
         if (!shouldUpdateUser && user.current_question_slug) {
-            const isSolved = await LeetCodeService.isQuestionSolved(
+            const solveStatus = await LeetCodeService.isQuestionSolved(
                 user.leetcode_username,
                 user.current_question_slug,
                 user.solved_slugs
             );
 
-            if (!isSolved) {
+            if (!solveStatus.solved) {
                 // Sticky: use the same question
                 question = {
                     title: user.current_question_title || 'Current Challenge',
@@ -76,6 +83,9 @@ export class StudyService {
                 };
             } else {
                 // --- SUCCESS CELEBRATION FLOW ---
+                // Use the exact timestamp from LeetCode if available
+                const solveTimeISO = solveStatus.timestamp || now.toISOString();
+
                 // 1. Send immediate success notification
                 await NotificationService.sendNotification({
                     title: 'Challenge Completed',
@@ -87,15 +97,48 @@ export class StudyService {
                 });
 
                 // 2. Clear current question and persist the solve to local history
+                const solveItem = { slug: user.current_question_slug, solved_at: solveTimeISO };
+                const updatedHistory = [...(user.solve_history || []), solveItem];
+
                 updates.current_question_slug = null;
                 updates.current_question_title = null;
                 updates.last_notified_at = now.toISOString();
+                updates.last_solve_at = solveTimeISO;
+                updates.solve_history = updatedHistory;
+
+                // Legacy Field Sync (Keep for a bit)
+                const solveDayStr = new Date(new Date(solveTimeISO).toLocaleString('en-US', { timeZone: userTimezone })).toDateString();
+                if (solveDayStr === todayStr) {
+                    updates.solved_today = solvedToday + 1;
+                }
 
                 // Append to solved_slugs if not already there
                 const solvedSlugs = user.solved_slugs || [];
                 if (!solvedSlugs.includes(user.current_question_slug)) {
                     updates.solved_slugs = [...solvedSlugs, user.current_question_slug];
                 }
+
+                // Sync plan_progress if in a study plan
+                if (user.study_plan_slug) {
+                    const planProgress = user.plan_progress || {};
+                    const currentPlanEntries = planProgress[user.study_plan_slug] || [];
+
+                    // Check if already in plan (handling both string and object formats)
+                    const isAlreadyInPlan = currentPlanEntries.some((entry: any) =>
+                        typeof entry === 'string' ? entry === user.current_question_slug : entry.slug === user.current_question_slug
+                    );
+
+                    if (!isAlreadyInPlan) {
+                        updates.plan_progress = {
+                            ...planProgress,
+                            [user.study_plan_slug]: [
+                                ...currentPlanEntries,
+                                solveItem
+                            ]
+                        };
+                    }
+                }
+
                 await supabase.from('users').update(updates).eq('id', user.id);
 
                 return { success: true, status: 'celebrated', username: user.leetcode_username };
@@ -109,11 +152,20 @@ export class StudyService {
             if (user.study_plan_slug) {
                 const planQuestions = await LeetCodeService.getStudyPlanQuestions(user.study_plan_slug);
                 if (planQuestions.length > 0) {
-                    // Find the first unsolved question in the plan
+                    // Get progress specifically for this plan
+                    const planProgress = user.plan_progress?.[user.study_plan_slug] || [];
+
+                    // Find the first unsolved question in the plan (using plan-specific history)
                     for (const q of planQuestions) {
                         const slug = q.url.split('/problems/')[1]?.split(/[/?#]/)[0];
-                        const isSolved = await LeetCodeService.isQuestionSolved(user.leetcode_username, slug, user.solved_slugs);
-                        if (!isSolved) {
+
+                        // We ONLY check planProgress here to allow for plan-specific resets
+                        // If we also checked global solved_slugs, a "Reset" wouldn't work
+                        const isSolvedInPlan = planProgress.some((entry: any) =>
+                            typeof entry === 'string' ? entry === slug : entry.slug === slug
+                        );
+
+                        if (!isSolvedInPlan) {
                             question = q;
                             break;
                         }
@@ -153,8 +205,14 @@ export class StudyService {
 
         // If it's a forced reset, use a more distinct title
         if (forceNewQuestion) {
-            title = `New Day, New Goal`;
-            message = `Fresh start for today: ${question.title}. You've got this!`;
+            // Check if we are in an auto-nudge flow (isManual = true)
+            if (isManual) {
+                title = `Keep the Momentum!`;
+                message = `Next up: ${question.title}. You're on a roll!`;
+            } else {
+                title = `New Day, New Goal`;
+                message = `Fresh start for today: ${question.title}. You've got this!`;
+            }
         }
 
         // Send the ntfy notification
@@ -184,11 +242,6 @@ export class StudyService {
             updates.last_notified_at = now.toISOString();
             if (forceNewQuestion) {
                 updates.last_reset_at = now.toISOString().split('T')[0]; // Store only date
-            }
-
-            // Persist the (potentially reset) solved_today count
-            if (lastSolveStr !== todayStr) {
-                updates.solved_today = solvedToday;
             }
 
             await supabase.from('users').update(updates).eq('id', user.id);

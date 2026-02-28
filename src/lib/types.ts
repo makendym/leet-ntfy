@@ -18,6 +18,8 @@ export interface UserProfile {
     nudge_interval?: number;
     solved_today?: number;
     last_solve_at?: string;
+    solve_history?: { slug: string; solved_at: string }[];
+    plan_progress?: Record<string, (string | { slug: string; solved_at: string })[]>;
 }
 
 export interface LeetCodeStats {

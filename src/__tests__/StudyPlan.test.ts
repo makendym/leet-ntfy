@@ -53,11 +53,18 @@ describe('StudyService (Study Plans)', () => {
 
         // Mock Problem 1 as solved, Problem 2 as unsolved
         console.log('2. Simulating User State: [Merge Strings] is DONE, [Greatest Common Divisor] is NEW');
-        vi.mocked(LeetCodeService.isQuestionSolved)
-            .mockResolvedValueOnce(true)   // Question 1 solved
-            .mockResolvedValueOnce(false);  // Question 2 unsolved
+        // Mock all questions as unsolved for isQuestionSolved to avoid celebration logic
+        vi.mocked(LeetCodeService.isQuestionSolved).mockResolvedValue({ solved: false });
 
-        const result = await StudyService.sendStudyNudge(mockUser, true);
+        // Use plan_progress to mark Problem 1 as solved in the study plan
+        const testUser = {
+            ...mockUser,
+            current_question_slug: null,
+            plan_progress: {
+                'leetcode-75': [{ slug: 'merge-strings-alternately', solved_at: new Date().toISOString() }]
+            }
+        };
+        const result = await StudyService.sendStudyNudge(testUser, true);
 
         expect(result.success).toBe(true);
         expect(LeetCodeService.getStudyPlanQuestions).toHaveBeenCalledWith('leetcode-75');
@@ -66,6 +73,7 @@ describe('StudyService (Study Plans)', () => {
         const notificationCall = vi.mocked(NotificationService.sendNotification).mock.calls[0][0];
         console.log(`3. Resulting Nudge: "${notificationCall.message}"`);
 
+        // Check if message contains the question title (templates are randomized)
         expect(notificationCall.message).toContain('Greatest Common Divisor');
         console.log('--- TEST PASSED: SEQUENTIAL LOGIC VERIFIED ---');
     });
@@ -76,12 +84,18 @@ describe('StudyService (Study Plans)', () => {
         ];
 
         vi.mocked(LeetCodeService.getStudyPlanQuestions).mockResolvedValue(planQuestions);
-        vi.mocked(LeetCodeService.isQuestionSolved).mockResolvedValue(true); // All solved
-
         const randomQuestion = { title: 'Random Hack', url: 'https://leetcode.com/problems/random-hack/', difficulty: 'EASY' };
         vi.mocked(LeetCodeService.getRandomQuestion).mockResolvedValue(randomQuestion);
 
-        const result = await StudyService.sendStudyNudge(mockUser, true);
+        // Mark all plan questions as solved in plan_progress
+        const testUser = {
+            ...mockUser,
+            current_question_slug: null,
+            plan_progress: {
+                'leetcode-75': [{ slug: 'problem-1', solved_at: new Date().toISOString() }]
+            }
+        };
+        const result = await StudyService.sendStudyNudge(testUser, true);
 
         expect(result.success).toBe(true);
         const notificationCall = vi.mocked(NotificationService.sendNotification).mock.calls[0][0];

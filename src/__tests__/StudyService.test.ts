@@ -44,7 +44,7 @@ describe('StudyService Logic', () => {
         }) as any;
 
         NotificationService.sendNotification = vi.fn().mockResolvedValue(true) as any;
-        LeetCodeService.isQuestionSolved = vi.fn().mockResolvedValue(false) as any;
+        LeetCodeService.isQuestionSolved = vi.fn().mockResolvedValue({ solved: false }) as any;
         LeetCodeService.getRandomQuestion = vi.fn().mockResolvedValue({
             title: 'Mock Question',
             url: 'https://leetcode.com/problems/mock-question/'
@@ -59,11 +59,12 @@ describe('StudyService Logic', () => {
     });
 
     it('should respect the daily goal and stop auto-nudging', async () => {
+        const now = new Date();
         const user = {
             ...mockUser,
             daily_goal: 1,
-            solved_today: 1,
-            last_solve_at: new Date().toISOString()
+            solve_history: [{ slug: 'some-problem', solved_at: now.toISOString() }],
+            last_solve_at: now.toISOString()
         };
         const result = await StudyService.sendStudyNudge(user as any, false);
         expect(result.success).toBe(false);
@@ -132,20 +133,34 @@ describe('StudyService Logic', () => {
         expect(NotificationService.sendNotification).toHaveBeenCalled();
     });
 
-    it('should trigger celebration when a current question is solved', async () => {
+    it('should trigger celebration and increment solved_today when a current question is solved', async () => {
         const userWithActiveQuestion = {
             ...mockUser,
             current_question_slug: 'two-sum',
-            current_question_title: 'Two Sum'
+            current_question_title: 'Two Sum',
+            solved_today: 0,
+            study_plan_slug: 'leetcode-75'
         };
 
-        (LeetCodeService.isQuestionSolved as any).mockResolvedValue(true);
+        (LeetCodeService.isQuestionSolved as any).mockResolvedValue({ solved: true });
 
-        const result = await StudyService.sendStudyNudge(userWithActiveQuestion, false);
+        const result = await StudyService.sendStudyNudge(userWithActiveQuestion as any, false);
 
         expect(result.status).toBe('celebrated');
         expect(NotificationService.sendNotification).toHaveBeenCalledWith(expect.objectContaining({
             title: 'Challenge Completed'
+        }));
+
+        // Verify database update call
+        expect(supabaseAdmin.from).toHaveBeenCalledWith('users');
+        const updateMock = (supabaseAdmin.from as any)().update;
+        expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({
+            current_question_slug: null,
+            plan_progress: expect.objectContaining({
+                'leetcode-75': expect.arrayContaining([
+                    expect.objectContaining({ slug: 'two-sum' })
+                ])
+            })
         }));
     });
 
