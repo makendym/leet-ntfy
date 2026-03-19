@@ -21,7 +21,7 @@ export function ActiveChallenge({
     if (!user?.current_question_slug) return null;
 
     return (
-        <section className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border border-[#ffa116]/30 rounded-2xl p-6 shadow-xl shadow-orange-500/10 mb-8 mt-2">
+        <section className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border border-[#ffa116]/30 rounded-2xl p-6 shadow-xl shadow-orange-500/10">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
                 <div className="space-y-1">
                     <div className="flex items-center gap-2 text-[#ffa116] mb-1">

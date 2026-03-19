@@ -361,14 +361,14 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
 
                     <div className="flex items-center gap-4 w-full sm:w-auto">
                         {user && (
-                            <div className="flex-grow md:flex-none flex flex-col items-end gap-2 bg-white/5 p-3 rounded-2xl border border-white/5">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Goal Progress</span>
-                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${solvedTodayCount >= (user.daily_goal || 1) ? 'bg-green-500/20 text-green-500' : 'bg-[#ffa116]/20 text-[#ffa116]'}`}>
-                                        {solvedTodayCount} / {user.daily_goal || 1}
+                            <div className="flex-grow md:flex-none flex flex-col justify-center gap-1.5 bg-white/5 px-4 h-[52px] rounded-2xl border border-white/5">
+                                <div className="flex items-center justify-between gap-4">
+                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] whitespace-nowrap">Goal Progress</span>
+                                    <span className={`text-[10px] font-mono font-black px-2 py-0.5 rounded-full ${solvedTodayCount >= (user.daily_goal || 1) ? 'bg-green-500/20 text-green-500' : 'bg-[#ffa116]/20 text-[#ffa116]'}`}>
+                                        {solvedTodayCount}/{user.daily_goal || 1}
                                     </span>
                                 </div>
-                                <div className="w-32 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
                                     <div
                                         className="h-full bg-gradient-to-r from-[#ffa116] to-orange-400 transition-all duration-1000 shadow-[0_0_10px_rgba(255,161,22,0.3)]"
                                         style={{ width: `${Math.min(100, (solvedTodayCount / (user.daily_goal || 1)) * 100)}%` }}
@@ -379,7 +379,7 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                         <button
                             onClick={testNotification}
                             disabled={nudgeStatus !== 'idle'}
-                            className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl border border-white/10 transition-all active:scale-95"
+                            className="w-[52px] h-[52px] flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-2xl border border-white/10 transition-all active:scale-95"
                             title="Trigger Manual Nudge"
                         >
                             <RefreshCcw className={`w-6 h-6 text-white ${nudgeStatus === 'loading' ? 'animate-spin' : ''}`} />
@@ -387,22 +387,19 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                     </div>
                 </div>
 
-                {/* --- 2. TOP METRICS & ACTIVITY --- */}
+                {/* --- 2. GRID WORKSPACE (3 Rows, 2 Columns with 2:1 Ratio) --- */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-                    <div className="lg:col-span-2">
+
+                    {/* ROW 1: METRICS */}
+                    <div className="lg:col-span-2 h-full">
                         <StatsBanner stats={stats} />
                     </div>
-                    <div className="lg:col-span-1">
+                    <div className="lg:col-span-1 h-full">
                         <ActivityHeatmap calendarData={calendarData} timezone={user?.timezone} />
                     </div>
-                </div>
 
-                {/* --- 3. MAIN WORKSPACE --- */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-
-                    {/* LEFT COLUMN: PRIMARY CONFIGURATION */}
-                    <div className="lg:col-span-2 space-y-8">
-
+                    {/* ROW 2: CORE CHALLENGE & SYNC */}
+                    <div className="lg:col-span-2 flex flex-col gap-8 h-full">
                         <ActiveChallenge
                             user={user}
                             onMarkAsSolved={markAsSolved}
@@ -417,7 +414,17 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                             onTogglePlan={toggleStudyPlan}
                             onResetPlan={resetPlan}
                         />
+                    </div>
 
+                    <div className="lg:col-span-1 flex flex-col gap-4 h-full">
+                        <ConnectionGuide user={user} />
+                        <div className="flex-1">
+                            <GroupNudgingCard />
+                        </div>
+                    </div>
+
+                    {/* ROW 3: CONFIGURATION & UTILITIES */}
+                    <div className="lg:col-span-2 flex flex-col gap-8 h-full">
                         <PaceSettingsCard
                             user={user}
                             onUpdateGoal={async (goal: number) => {
@@ -454,13 +461,8 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                         />
                     </div>
 
-                    {/* RIGHT COLUMN: UTILITIES & SETUP */}
-                    <div className="space-y-8 lg:sticky lg:top-8">
-
-                        <ConnectionGuide user={user} />
-
-                        <GroupNudgingCard />
-
+                    {/* Last item (Sign Out) does not need h-full height stretching per request */}
+                    <div className="lg:col-span-1 space-y-8">
                         <div className="p-1 bg-white/5 rounded-2xl border border-white/5 space-y-1">
                             <button
                                 onClick={() => router.push('/')}
@@ -470,7 +472,6 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                             </button>
                         </div>
 
-                        {/* Quick Help Link */}
                         <div className="text-center">
                             <a
                                 href="https://github.com/makendym/leet-ntfy"
@@ -480,7 +481,6 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                                 Documentation & Source
                             </a>
                         </div>
-
                     </div>
                 </div>
             </div>
