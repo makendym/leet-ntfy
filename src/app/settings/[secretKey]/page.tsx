@@ -459,6 +459,8 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
 
                         <ConnectionGuide user={user} />
 
+                        <GroupNudgingCard />
+
                         <div className="p-1 bg-white/5 rounded-2xl border border-white/5 space-y-1">
                             <button
                                 onClick={() => router.push('/')}
