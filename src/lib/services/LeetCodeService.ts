@@ -92,6 +92,7 @@ export class LeetCodeService {
                 title
                 titleSlug
                 difficulty
+                isPaidOnly
               }
             }
           }
@@ -128,7 +129,10 @@ export class LeetCodeService {
       });
 
       const data = await response.json();
-      return data?.data?.problemsetQuestionList?.questions || [];
+      const questions = data?.data?.problemsetQuestionList?.questions || [];
+
+      // Filter out premium questions
+      return questions.filter((q: any) => !q.isPaidOnly);
     } catch (error) {
       console.error('Error fetching questions from LeetCode:', error);
       return [];
@@ -168,24 +172,28 @@ export class LeetCodeService {
     };
   }
 
-  static async isQuestionSolved(username: string, questionSlug: string, localSolvedSlugs?: string[]): Promise<{ solved: boolean; timestamp?: string }> {
+  static async isQuestionSolved(username: string, questionSlug: string, localSolvedSlugs?: string[]): Promise<{ solved: boolean; timestamp?: string; isPaidOnly?: boolean }> {
     // First check local history
     if (localSolvedSlugs && localSolvedSlugs.includes(questionSlug)) {
       return { solved: true };
     }
 
     const query = `
-          query recentSubmissionList($username: String!, $limit: Int) {
+          query recentSubmissionList($username: String!, $limit: Int, $questionSlug: String!) {
             recentSubmissionList(username: $username, limit: $limit) {
-              titleSlug
-              statusDisplay
-              timestamp
-            }
-          }
-        `;
+             titleSlug
+             statusDisplay
+             timestamp
+           }
+           question(titleSlug: $questionSlug) {
+             isPaidOnly
+           }
+         }
+       `;
 
     const variables = {
       username,
+      questionSlug,
       limit: 100
     };
 
@@ -205,13 +213,15 @@ export class LeetCodeService {
         s.titleSlug === questionSlug && s.statusDisplay === 'Accepted'
       );
 
+      const isPaidOnly = data?.data?.question?.isPaidOnly;
+
       if (solution) {
         // Convert unix timestamp string to ISO string
         const date = new Date(parseInt(solution.timestamp) * 1000);
-        return { solved: true, timestamp: date.toISOString() };
+        return { solved: true, timestamp: date.toISOString(), isPaidOnly };
       }
 
-      return { solved: false };
+      return { solved: false, isPaidOnly };
     } catch (error) {
       console.error('Error checking question status:', error);
       return { solved: false };
@@ -230,6 +240,7 @@ export class LeetCodeService {
                   title
                   titleSlug
                   difficulty
+                  paidOnly
                 }
               }
             }
@@ -262,6 +273,7 @@ export class LeetCodeService {
                   title
                   titleSlug
                   difficulty
+                  paidOnly
                 }
               }
             }
@@ -282,17 +294,58 @@ export class LeetCodeService {
       const data = await response.json();
       const subGroups = data?.data?.studyPlanV2Detail?.planSubGroups || [];
 
-      // Flatten all questions from all sub-groups
+      // Flatten all questions from all sub-groups and filter out premium
       const questions = subGroups.flatMap((group: any) => group.questions || []);
 
-      return questions.map((q: any) => ({
-        title: q.title,
-        url: `https://leetcode.com/problems/${q.titleSlug}/`,
-        difficulty: q.difficulty
-      }));
+      return questions
+        .filter((q: any) => !q.paidOnly)
+        .map((q: any) => ({
+          title: q.title,
+          url: `https://leetcode.com/problems/${q.titleSlug}/`,
+          difficulty: q.difficulty
+        }));
     } catch (error) {
       console.error('Error fetching study plan questions:', error);
       return [];
+    }
+  }
+
+  static async getUserCalendar(username: string) {
+    const query = `
+      query userCalendar($username: String!) {
+        matchedUser(username: $username) {
+          userCalendar {
+            activeYears
+            streak
+            totalActiveDays
+            submissionCalendar
+          }
+        }
+      }
+    `;
+
+    const variables = { username };
+
+    try {
+      const response = await fetch(this.GRAPHQL_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, variables }),
+      });
+
+      const result = await response.json();
+      const calendarData = result.data?.matchedUser?.userCalendar;
+      if (calendarData?.submissionCalendar) {
+        try {
+          calendarData.submissionCalendar = JSON.parse(calendarData.submissionCalendar);
+        } catch (e) {
+          console.error('Error parsing submission calendar:', e);
+        }
+      }
+      return calendarData || null;
+    } catch (error) {
+      console.error('Error fetching user calendar:', error);
+      return null;
     }
   }
 }

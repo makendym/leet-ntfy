@@ -13,6 +13,7 @@ import { PaceSettingsCard } from '@/components/settings/PaceSettingsCard';
 import { ContentFilterCard } from '@/components/settings/ContentFilterCard';
 import { ConnectionGuide } from '@/components/settings/ConnectionGuide';
 import { ActiveChallenge } from '@/components/settings/ActiveChallenge';
+import { ActivityHeatmap } from '@/components/settings/ActivityHeatmap';
 
 export default function SettingsPage({ params }: { params: Promise<{ secretKey: string }> }) {
     const { secretKey } = use(params);
@@ -28,6 +29,7 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
     const [nudgeStatus, setNudgeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [planCounts, setPlanCounts] = useState<Record<string, number>>({});
     const [isResetting, setIsResetting] = useState(false);
+    const [calendarData, setCalendarData] = useState<any>(null);
 
     useEffect(() => {
         async function init() {
@@ -60,6 +62,13 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                     }
                 }
                 setPlanCounts(counts);
+
+                // 5. Fetch LeetCode calendar data
+                const calendarRes = await fetch(`/api/leetcode/calendar?username=${userData.leetcode_username}`);
+                if (calendarRes.ok) {
+                    const cal = await calendarRes.json();
+                    setCalendarData(cal);
+                }
 
             } catch (err) {
                 console.error(err);
@@ -266,6 +275,29 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
         }
     };
 
+    const shuffleQuestion = async () => {
+        if (!user) return;
+        setNudgeStatus('loading');
+        try {
+            const res = await fetch(`/api/user/shuffle?key=${secretKey}`);
+            if (res.ok) {
+                setNudgeStatus('success');
+                // Refresh user data to get the new current_question
+                const userRes = await fetch(`/api/user/settings?secretKey=${secretKey}`);
+                const userData = await userRes.json();
+                setUser(userData);
+                setTimeout(() => setNudgeStatus('idle'), 3000);
+            } else {
+                setNudgeStatus('error');
+                setTimeout(() => setNudgeStatus('idle'), 3000);
+            }
+        } catch (err) {
+            console.error(err);
+            setNudgeStatus('error');
+            setTimeout(() => setNudgeStatus('idle'), 3000);
+        }
+    };
+
     const testNotification = async () => {
         if (!user) return;
         setNudgeStatus('loading');
@@ -354,8 +386,15 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                     </div>
                 </div>
 
-                {/* --- 2. GLOBAL SCOREBOARD --- */}
-                <StatsBanner stats={stats} />
+                {/* --- 2. TOP METRICS & ACTIVITY --- */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+                    <div className="lg:col-span-2">
+                        <StatsBanner stats={stats} />
+                    </div>
+                    <div className="lg:col-span-1">
+                        <ActivityHeatmap calendarData={calendarData} timezone={user?.timezone} />
+                    </div>
+                </div>
 
                 {/* --- 3. MAIN WORKSPACE --- */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -366,7 +405,7 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                         <ActiveChallenge
                             user={user}
                             onMarkAsSolved={markAsSolved}
-                            onRefresh={testNotification}
+                            onRefresh={shuffleQuestion}
                             isSaving={isSaving}
                             nudgeStatus={nudgeStatus}
                         />

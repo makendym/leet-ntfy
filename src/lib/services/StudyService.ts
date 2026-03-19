@@ -75,7 +75,10 @@ export class StudyService {
                 user.solved_slugs
             );
 
-            if (!solveStatus.solved) {
+            if (solveStatus.isPaidOnly && !isManual) {
+                console.log(`[StudyService] User ${user.leetcode_username} is stuck on premium question ${user.current_question_slug}. Forcing shuffle.`);
+                shouldUpdateUser = true;
+            } else if (!solveStatus.solved) {
                 // Sticky: use the same question
                 question = {
                     title: user.current_question_title || 'Current Challenge',
@@ -151,13 +154,20 @@ export class StudyService {
         if (shouldUpdateUser) {
             if (user.study_plan_slug) {
                 const planQuestions = await LeetCodeService.getStudyPlanQuestions(user.study_plan_slug);
+                console.log(`[StudyService] Plan ${user.study_plan_slug} returned ${planQuestions.length} questions for ${user.leetcode_username}`);
                 if (planQuestions.length > 0) {
                     // Get progress specifically for this plan
                     const planProgress = user.plan_progress?.[user.study_plan_slug] || [];
+                    console.log(`[StudyService] Plan progress for ${user.leetcode_username}: ${planProgress.length} solved`);
 
                     // Find the first unsolved question in the plan (using plan-specific history)
                     for (const q of planQuestions) {
                         const slug = q.url.split('/problems/')[1]?.split(/[/?#]/)[0];
+
+                        // Check if this is the question we are trying to skip (in case of manual shuffle)
+                        if (forceNewQuestion && slug === user.current_question_slug) {
+                            continue;
+                        }
 
                         // We ONLY check planProgress here to allow for plan-specific resets
                         // If we also checked global solved_slugs, a "Reset" wouldn't work
@@ -177,6 +187,7 @@ export class StudyService {
             if (!question) {
                 const randomTopic = topics[Math.floor(Math.random() * topics.length)];
                 question = await LeetCodeService.getRandomQuestion(randomTopic, user.difficulties);
+                console.log(`[StudyService] Fallback to random question for ${user.leetcode_username}: ${question?.title}`);
             }
         }
 
@@ -211,7 +222,9 @@ export class StudyService {
                 message = `Next up: ${question.title}. You're on a roll!`;
             } else {
                 title = `New Day, New Goal`;
-                message = `Fresh start for today: ${question.title}. You've got this!`;
+                message = (user.study_plan_slug && !question.url.includes(user.study_plan_slug))
+                    ? `Study plan completed! 🎉 Here's a bonus challenge: ${question.title}`
+                    : `Fresh start for today: ${question.title}. You've got this!`;
             }
         }
 

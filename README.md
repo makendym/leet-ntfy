@@ -13,14 +13,23 @@
 **LeetNtfy** is a personalized LeetCode study notification system designed to keep you consistent with your coding practice. By leveraging the power of `ntfy.sh` and Supabase, LeetNtfy sends tailored algorithm challenges directly to your phone or desktop based on the topics you are currently studying.
 
 This application simplifies the study workflow:
+- **Live Activity Heatmap**: Real-time sync with your LeetCode submission history and streak.
+- **Study Plan Support**: Seamlessly progress through official LeetCode Study Plans like "LeetCode 75".
 - **No-Password Access**: Use a unique secret link to manage your settings.
 - **Personalized Topics**: Add the topics you've recently studied to your "Random List" for targeted practice.
 - **One-Tap Management**: Every notification includes a link to instantly adjust your settings.
 - **Cloud Persistence**: Your progress and preferences are securely stored in Supabase.
 
 ## Sneak-Peek
-### Architecture Diagram
-![Architecture Diagram](public/architecture.png)
+### Screenshot
+![Screenshot](public/sneakPeak.png)
+...
+CREATE TABLE users (
+  ...
+  solve_history jsonb DEFAULT '[]',
+  timezone text DEFAULT 'America/New_York',
+  ...
+);
 
 ## Getting Started
 ### Prerequisites

@@ -11,7 +11,7 @@ export function StatsBanner({ stats }: StatsBannerProps) {
     if (!stats) return null;
 
     return (
-        <section className="bg-gradient-to-br from-orange-600/5 to-white/5 border border-white/10 rounded-2xl p-6">
+        <section className="bg-gradient-to-br from-orange-600/5 to-white/5 border border-white/10 rounded-2xl p-6 flex flex-col h-full">
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-8">
                 <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2 text-gray-400 mb-1">
@@ -61,12 +61,12 @@ export function StatsBanner({ stats }: StatsBannerProps) {
                 </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-white/5 flex justify-between items-center">
+            <div className="mt-auto pt-6 border-t border-white/5 flex justify-between items-center">
                 <div className="flex items-center gap-4">
                     <span className="text-xs text-gray-500 font-bold uppercase tracking-widest">Global Rank</span>
                     <span className="font-mono text-[#ffa116] font-bold">#{stats.rank.toLocaleString()}</span>
                 </div>
-                <div className="text-[10px] text-gray-500">
+                <div className="text-[10px] text-gray-500 font-medium uppercase tracking-widest opacity-60">
                     Live from LeetCode
                 </div>
             </div>

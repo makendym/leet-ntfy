@@ -5,7 +5,7 @@ import { UserProfile } from '@/lib/types';
 
 export async function POST(request: Request) {
     try {
-        const { secretKey } = await request.json();
+        const { secretKey, forceShuffle } = await request.json();
 
         if (!secretKey) {
             return NextResponse.json({ error: 'Secret key is required' }, { status: 400 });
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
         }
 
         // 2. Trigger nudge manually (bypasses safety checks)
-        const result = await StudyService.sendStudyNudge(user as UserProfile, true);
+        const result = await StudyService.sendStudyNudge(user as UserProfile, true, !!forceShuffle);
 
         if (!result.success) {
             return NextResponse.json({ error: result.reason || 'Failed to send nudge' }, { status: 500 });
