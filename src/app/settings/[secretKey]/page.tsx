@@ -10,6 +10,7 @@ import { UserProfile, LeetCodeStats } from '@/lib/types';
 import { StatsBanner } from '@/components/settings/StatsBanner';
 import { StudyPathCard } from '@/components/settings/StudyPathCard';
 import { PaceSettingsCard } from '@/components/settings/PaceSettingsCard';
+import { GroupNudgingCard } from '@/components/settings/GroupNudgingCard';
 import { ContentFilterCard } from '@/components/settings/ContentFilterCard';
 import { ConnectionGuide } from '@/components/settings/ConnectionGuide';
 import { ActiveChallenge } from '@/components/settings/ActiveChallenge';
