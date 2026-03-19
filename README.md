@@ -17,6 +17,7 @@ This application simplifies the study workflow:
 - **Study Plan Support**: Seamlessly progress through official LeetCode Study Plans like "LeetCode 75".
 - **No-Password Access**: Use a unique secret link to manage your settings.
 - **Personalized Topics**: Add the topics you've recently studied to your "Random List" for targeted practice.
+- **Group Nudging (Coming Soon)**: Stay motivated with shared goal tracking and collective nudging.
 - **One-Tap Management**: Every notification includes a link to instantly adjust your settings.
 - **Cloud Persistence**: Your progress and preferences are securely stored in Supabase.
 
