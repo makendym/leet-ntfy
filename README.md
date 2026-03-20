@@ -24,13 +24,7 @@ This application simplifies the study workflow:
 ## Sneak-Peek
 ### Screenshot
 ![Screenshot](public/sneakPeak.png)
-...
-CREATE TABLE users (
-  ...
-  solve_history jsonb DEFAULT '[]',
-  timezone text DEFAULT 'America/New_York',
-  ...
-);
+
 
 ## Getting Started
 ### Prerequisites
