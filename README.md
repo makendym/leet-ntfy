@@ -23,7 +23,7 @@ This application simplifies the study workflow:
 
 ## Sneak-Peek
 ### Screenshot
-![Screenshot](public/sneakPeak.png)
+![Screenshot](public/linkendInPostMarch19.png)
 
 
 ## Getting Started
