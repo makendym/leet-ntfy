@@ -65,6 +65,7 @@ export class StudyService {
 
         let question;
         let shouldUpdateUser = forceNewQuestion;
+        let isBonusChallenge = false;
         const updates: Partial<UserProfile> = {};
 
         // Check if user has an active question (skip if forcing new one)
@@ -187,6 +188,7 @@ export class StudyService {
             if (!question) {
                 const randomTopic = topics[Math.floor(Math.random() * topics.length)];
                 question = await LeetCodeService.getRandomQuestion(randomTopic, user.difficulties);
+                isBonusChallenge = true;
                 console.log(`[StudyService] Fallback to random question for ${user.leetcode_username}: ${question?.title}`);
             }
         }
@@ -222,7 +224,7 @@ export class StudyService {
                 message = `Next up: ${question.title}. You're on a roll!`;
             } else {
                 title = `New Day, New Goal`;
-                message = (user.study_plan_slug && !question.url.includes(user.study_plan_slug))
+                message = (user.study_plan_slug && isBonusChallenge)
                     ? `Study plan completed! 🎉 Here's a bonus challenge: ${question.title}`
                     : `Fresh start for today: ${question.title}. You've got this!`;
             }
