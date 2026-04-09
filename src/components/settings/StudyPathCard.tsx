@@ -34,8 +34,12 @@ export function StudyPathCard({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {plans.map(plan => {
-                    const solvedCount = plan.slug ? (user?.plan_progress?.[plan.slug]?.length || 0) : 0;
+                    const planItems = plan.slug ? (user?.plan_progress?.[plan.slug] || []) : [];
+                    const uniqueSlugs = new Set(planItems.map((item: any) => typeof item === 'string' ? item : item.slug));
                     const totalCount = plan.slug ? (planCounts[plan.slug] || 0) : 0;
+                    
+                    // Cap at totalCount to prevent over-100% progress when bonus problems are assigned
+                    const solvedCount = totalCount > 0 ? Math.min(uniqueSlugs.size, totalCount) : uniqueSlugs.size;
                     const progressPercent = totalCount > 0 ? (solvedCount / totalCount) * 100 : 0;
 
                     return (
