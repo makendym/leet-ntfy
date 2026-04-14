@@ -19,7 +19,8 @@ export function StudyPathCard({
     const plans = [
         { name: 'Random Mix', slug: null, desc: 'Randomly selected topics' },
         { name: 'LeetCode 75', slug: 'leetcode-75', desc: 'The essential starter set' },
-        { name: 'Interview 150', slug: 'top-interview-150', desc: 'Top company interview set' }
+        { name: 'Interview 150', slug: 'top-interview-150', desc: 'Top company interview set' },
+        { name: 'NeetCode 150', slug: 'neetcode-150', desc: 'The famous algorithmic list' }
     ];
 
     return (
@@ -32,7 +33,7 @@ export function StudyPathCard({
                 <p className="text-sm text-gray-400 font-medium"> Curated sequential paths or a randomized mix based on your interests.</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {plans.map(plan => {
                     const planItems = plan.slug ? (user?.plan_progress?.[plan.slug] || []) : [];
                     const uniqueSlugs = new Set(planItems.map((item: any) => typeof item === 'string' ? item : item.slug));

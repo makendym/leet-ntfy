@@ -1,8 +1,18 @@
 import { LeetCodeStats } from '../types';
+import neetcodeData from '../../data/neetcode150.json';
 
 export class LeetCodeService {
   private static readonly API_BASE = 'https://leetcode-stats-api.herokuapp.com';
   private static readonly GRAPHQL_BASE = 'https://leetcode.com/graphql';
+
+  static getNeetCodeUrl(leetcodeSlug: string | null): string | null {
+    if (!leetcodeSlug) return null;
+    const match = neetcodeData.find((q: any) => {
+        const qSlug = q.leetcodeUrl.split('/problems/')[1]?.split(/[/?#]/)[0];
+        return qSlug === leetcodeSlug;
+    });
+    return match ? match.url : null;
+  }
 
   static async getUserStats(username: string): Promise<LeetCodeStats | null> {
     const query = `
@@ -229,6 +239,24 @@ export class LeetCodeService {
   }
 
   static async getStudyPlanDetails(planSlug: string) {
+    if (planSlug === 'neetcode-150') {
+      return {
+        name: 'NeetCode 150',
+        planSubGroups: [
+          {
+            name: 'All Topics',
+            slug: 'all-topics',
+            questions: neetcodeData.map((q: any) => ({
+              title: q.title,
+              titleSlug: q.leetcodeUrl.split('/problems/')[1]?.split(/[/?#]/)[0],
+              difficulty: q.difficulty,
+              paidOnly: false
+            }))
+          }
+        ]
+      };
+    }
+
     const query = `
           query studyPlanV2Detail($slug: String!) {
             studyPlanV2Detail(planSlug: $slug) {
@@ -265,6 +293,14 @@ export class LeetCodeService {
   }
 
   static async getStudyPlanQuestions(planSlug: string) {
+    if (planSlug === 'neetcode-150') {
+      return neetcodeData.map((q: any) => ({
+        title: q.title,
+        url: q.leetcodeUrl, // Keep internal logic strictly on LeetCode URLs
+        difficulty: q.difficulty
+      }));
+    }
+
     const query = `
           query studyPlanV2Detail($slug: String!) {
             studyPlanV2Detail(planSlug: $slug) {

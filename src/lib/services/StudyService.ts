@@ -231,6 +231,26 @@ export class StudyService {
         }
 
         // Send the ntfy notification
+        const activeSlug = updates.current_question_slug || user.current_question_slug;
+        const neetcodeUrl = activeSlug ? LeetCodeService.getNeetCodeUrl(activeSlug) : null;
+        
+        const actions: any[] = [
+            {
+                label: 'Marked as Solved',
+                url: `${process.env.NEXT_PUBLIC_APP_URL}/api/user/solve`,
+                type: 'http',
+                method: 'POST',
+                body: JSON.stringify({ secretKey: user.secret_key })
+            },
+            { label: 'Try Another', url: `${process.env.NEXT_PUBLIC_APP_URL}/api/user/shuffle?key=${user.secret_key}` },
+            { label: 'Settings', url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/${user.secret_key}` }
+        ];
+
+        if (neetcodeUrl) {
+            // Insert it as the primary action link before settings
+            actions.splice(2, 0, { label: 'Solve on NeetCode.io', url: neetcodeUrl, type: 'view' });
+        }
+
         const success = await NotificationService.sendNotification({
             title,
             message,
@@ -239,17 +259,7 @@ export class StudyService {
             priority,
             icon: `${process.env.NEXT_PUBLIC_APP_URL}/icon.png`,
             image: `https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=1000&auto=format&fit=crop`, // Generic code image
-            actions: [
-                {
-                    label: 'Marked as Solved',
-                    url: `${process.env.NEXT_PUBLIC_APP_URL}/api/user/solve`,
-                    type: 'http',
-                    method: 'POST',
-                    body: JSON.stringify({ secretKey: user.secret_key })
-                },
-                { label: 'Try Another', url: `${process.env.NEXT_PUBLIC_APP_URL}/api/user/shuffle?key=${user.secret_key}` },
-                { label: 'Settings', url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/${user.secret_key}` }
-            ]
+            actions
         });
 
         if (success) {

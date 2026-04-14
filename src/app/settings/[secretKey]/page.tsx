@@ -53,7 +53,7 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                 setAllTopics(topics);
 
                 // 4. Fetch study plan counts via proxy
-                const plans = ['leetcode-75', 'top-interview-150'];
+                const plans = ['leetcode-75', 'top-interview-150', 'neetcode-150'];
                 const counts: Record<string, number> = {};
                 for (const slug of plans) {
                     const res = await fetch(`/api/leetcode/study-plan/questions?slug=${slug}`);
@@ -176,6 +176,10 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ secretKey, study_plan_slug: planSlug }),
             });
+            // Refresh user data silently to get the newly auto-assigned current_question
+            const userRes = await fetch(`/api/user/settings?secretKey=${secretKey}`);
+            const userData = await userRes.json();
+            setUser(userData);
         } catch (err) {
             console.error('Failed to save study plan:', err);
         } finally {
@@ -276,7 +280,7 @@ export default function SettingsPage({ params }: { params: Promise<{ secretKey: 
         }
     };
 
-    const shuffleQuestion = async () => {
+    async function shuffleQuestion() {
         if (!user) return;
         setNudgeStatus('loading');
         try {

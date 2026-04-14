@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { UserRepository } from '@/lib/repositories/UserRepository';
 import { StudyService } from '@/lib/services/StudyService';
+import { LeetCodeService } from '@/lib/services/LeetCodeService';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -66,6 +67,39 @@ export async function PATCH(request: Request) {
 
         if (!user) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
+
+        // --- SILENT PLAN SWITCH LOGIC ---
+        // If the user changed their study plan, automatically and silently update their
+        // active question to the first unsolved question of the new plan.
+        if ('study_plan_slug' in updates) {
+            const planSlug = updates.study_plan_slug;
+            if (planSlug) {
+                const planQuestions = await LeetCodeService.getStudyPlanQuestions(planSlug);
+                const planProgress = user.plan_progress?.[planSlug] || [];
+                
+                let nextQuestion = null;
+                for (const q of planQuestions) {
+                    const slug = q.url.split('/problems/')[1]?.split(/[/?#]/)[0];
+                    const isSolved = planProgress.some((p: any) => 
+                        typeof p === 'string' ? p === slug : p.slug === slug
+                    );
+                    
+                    if (!isSolved) {
+                        nextQuestion = q;
+                        break;
+                    }
+                }
+                
+                if (nextQuestion) {
+                    updates.current_question_slug = nextQuestion.url.split('/problems/')[1]?.split(/[/?#]/)[0];
+                    updates.current_question_title = nextQuestion.title;
+                }
+            } else {
+                // If they cleared the plan, also clear the active question placeholder if needed
+                updates.current_question_slug = null;
+                updates.current_question_title = null;
+            }
         }
 
         const success = await UserRepository.updateSettings(user.id, updates);

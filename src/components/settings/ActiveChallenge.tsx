@@ -2,6 +2,7 @@
 
 import { Zap, ExternalLink, Check, RefreshCcw } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
+import neetcodeData from '@/data/neetcode150.json';
 
 interface ActiveChallengeProps {
     user: UserProfile | null;
@@ -19,6 +20,12 @@ export function ActiveChallenge({
     nudgeStatus
 }: ActiveChallengeProps) {
     if (!user?.current_question_slug) return null;
+
+    const neetcodeMatch = neetcodeData.find((q: any) => {
+        const leetcodeSlug = q.leetcodeUrl.split('/problems/')[1]?.split(/[/?#]/)[0];
+        return leetcodeSlug === user.current_question_slug;
+    });
+    const neetcodeUrl = neetcodeMatch?.url;
 
     return (
         <section className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border border-[#ffa116]/30 rounded-2xl p-6 shadow-xl shadow-orange-500/10">
@@ -38,6 +45,20 @@ export function ActiveChallenge({
                         >
                             View on LeetCode <ExternalLink className="w-3 h-3" />
                         </a>
+                        {neetcodeUrl && (
+                            <>
+                                <span className="opacity-50">•</span>
+                                <a
+                                    href={neetcodeUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-[#3b82f6] hover:text-[#60a5fa] transition-colors font-medium"
+                                    title="Open directly in NeetCode.io IDE"
+                                >
+                                    Solve on NeetCode.io <ExternalLink className="w-3 h-3" />
+                                </a>
+                            </>
+                        )}
                     </div>
                 </div>
                 <div className="flex gap-3 w-full sm:w-auto">
