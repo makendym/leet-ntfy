@@ -246,15 +246,13 @@ export class StudyService {
             { label: 'Settings', url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/${user.secret_key}` }
         ];
 
-        if (neetcodeUrl) {
-            // Insert it as the primary action link before settings
-            actions.splice(2, 0, { label: 'Solve on NeetCode.io', url: neetcodeUrl, type: 'view' });
-        }
-
+        // Sanitize the topic (ntfy requires only alphanumeric, underscores, and hyphens)
+        const topic = user.secret_key.replace(/[^a-zA-Z0-9_-]/g, '');
+        
         const success = await NotificationService.sendNotification({
             title,
             message,
-            topic: user.secret_key,
+            topic,
             clickUrl: question.url,
             priority,
             icon: `${process.env.NEXT_PUBLIC_APP_URL}/icon.png`,
@@ -270,6 +268,10 @@ export class StudyService {
             }
 
             await supabase.from('users').update(updates).eq('id', user.id);
+        }
+
+        if (!success) {
+            console.error(`[StudyService] Nudge failed for ${user.leetcode_username}. Reason: ${success ? 'None' : 'Notification Service failed'}`);
         }
 
         return {

@@ -38,11 +38,17 @@ export class NotificationService {
                 }
                 headers['Actions'] = payload.actions.map(a => {
                     const type = a.type || 'view';
-                    const label = sanitize(a.label).replace(/"/g, ''); // Remove quotes to avoid nesting
-                    const parts = [type, `"${label}"`, a.url];
+                    const label = sanitize(a.label).replace(/"/g, ''); 
+                    
+                    // ntfy requires quoting fields if they contain commas or semicolons.
+                    // To be safe, we quote the label, URL, and body, and escape internal quotes.
+                    const quote = (str: string) => `"${str.replace(/"/g, '\\"')}"`;
+                    
+                    const parts = [type, quote(label), quote(a.url)];
+                    
                     if (type === 'http') {
                         if (a.method) parts.push(`method=${a.method}`);
-                        if (a.body) parts.push(`body=${a.body}`);
+                        if (a.body) parts.push(`body=${quote(a.body)}`);
                     }
                     return parts.join(',');
                 }).join('; ');
@@ -54,9 +60,16 @@ export class NotificationService {
                 body: payload.message,
             });
 
-            return response.ok;
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`[NotificationService] ntfy error (${response.status}):`, errorText);
+                console.error(`[NotificationService] Failed Headers:`, JSON.stringify(headers, null, 2));
+                return false;
+            }
+
+            return true;
         } catch (error) {
-            console.error('Error sending ntfy notification:', error);
+            console.error('[NotificationService] Error sending ntfy notification:', error);
             return false;
         }
     }
